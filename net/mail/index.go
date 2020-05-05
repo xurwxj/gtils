@@ -13,4 +13,5 @@ func SendMail(to, from, title, body, mailType string) error {
 	case "aliyun":
 		return AliMail(to, from, title, body, mailType)
 	}
+	return nil
 }
