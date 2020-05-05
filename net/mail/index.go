@@ -9,8 +9,8 @@ func SendMail(to, from, title, body, mailType string) error {
 	}
 	switch cloud {
 	case "general":
-		go GenMail(to, from, title, body, mailType)
+		return GenMail(to, from, title, body, mailType)
 	case "aliyun":
-		go AliMail(to, from, title, body, mailType)
+		return AliMail(to, from, title, body, mailType)
 	}
 }
