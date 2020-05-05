@@ -13,3 +13,18 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+.idea
+.vscode
+.DS_Store
+tmp/
+logs/
+dist/
+doc/
+build/
+vendor/
+tmptest/
+.server.json
+datas/
+README.html
+README.pdf
