@@ -9,7 +9,7 @@ import (
 	"github.com/xurwxj/viper"
 )
 
-func AliMail(to, from, subject, body, mailtype string) error {
+func AliMail(to, fromUser, subject, body, mailtype string) error {
 	if to != "" && subject != "" {
 		user := viper.GetString("email.account")
 		password := viper.GetString("email.pwd")
@@ -36,4 +36,28 @@ func AliMail(to, from, subject, body, mailtype string) error {
 		return nil
 	}
 	return errors.New("no receiver")
+}
+
+type loginAuth struct {
+	username, password string
+}
+
+func LoginAuth(username, password string) smtp.Auth {
+	return &loginAuth{username, password}
+}
+
+func (a *loginAuth) Start(server *smtp.ServerInfo) (string, []byte, error) {
+	return "LOGIN", []byte(a.username), nil
+}
+
+func (a *loginAuth) Next(fromServer []byte, more bool) ([]byte, error) {
+	if more {
+		switch string(fromServer) {
+		case "Username:":
+			return []byte(a.username), nil
+		case "Password:":
+			return []byte(a.password), nil
+		}
+	}
+	return nil, nil
 }

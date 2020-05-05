@@ -9,7 +9,7 @@ import (
 	"github.com/xurwxj/viper"
 )
 
-func GenMail(to, from, subject, body, mailtype string) error {
+func GenMail(to, fromUser, subject, body, mailtype string) error {
 	if to != "" && subject != "" {
 		user := viper.GetString("email.account")
 		password := viper.GetString("email.pwd")
