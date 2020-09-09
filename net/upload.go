@@ -127,7 +127,7 @@ func MUploadToRemote(surl, category, bucket, filePath, id string, header map[str
 						// okPart = okPart + 1
 						// fmt.Println(pm, "rs: ", rssd, " on ", time.Now().UTC())
 						if callback != nil {
-							callback(id, pm.TotalSize, pm.ChunkSize, int64(pm.ChunkNumber))
+							callback(id, pm.TotalSize, pm.CurrentChunkSize, int64(pm.ChunkNumber))
 						}
 						wg.Done()
 					}
@@ -135,7 +135,7 @@ func MUploadToRemote(surl, category, bucket, filePath, id string, header map[str
 						// okPart = okPart + 1
 						// fmt.Println(pm, " rs: ", rssd, " on ", time.Now().UTC())
 						if callback != nil {
-							callback(id, pm.TotalSize, pm.ChunkSize, int64(pm.ChunkNumber))
+							callback(id, pm.TotalSize, pm.CurrentChunkSize, int64(pm.ChunkNumber))
 						}
 						wg.Done()
 					}
