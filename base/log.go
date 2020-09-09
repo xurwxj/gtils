@@ -4,7 +4,10 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
+	"time"
 
+	rotatelogs "github.com/lestrrat/go-file-rotatelogs"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -31,6 +34,8 @@ type Config struct {
 	MaxBackups int
 	// MaxAge the max age in days to keep a logfile
 	MaxAge int
+	// RotateHour the log file
+	RotateHour string
 }
 
 // Configure sets up the logging framework
@@ -63,6 +68,7 @@ func Configure(config Config) *zerolog.Logger {
 		Int("maxSizeMB", config.MaxSize).
 		Int("maxBackups", config.MaxBackups).
 		Int("maxAgeInDays", config.MaxAge).
+		Str("rotateHour", config.RotateHour).
 		Msg("logging configured")
 
 	return &logger
@@ -74,6 +80,22 @@ func newRollingFile(config Config) io.Writer {
 		return nil
 	}
 
+	// return &lumberjack.Logger{
+	// 	Filename:   path.Join(config.Directory, config.Filename),
+	// 	MaxBackups: config.MaxBackups, // files
+	// 	MaxSize:    config.MaxSize,    // megabytes
+	// 	MaxAge:     config.MaxAge,     // days
+	// 	LocalTime:  config.LocalTime,
+	// }
+	rotateDuration, err := time.ParseDuration(config.RotateHour)
+	if err != nil {
+		rotateDuration = time.Duration(24 * time.Hour)
+	}
+	rlog, err := rotatelogs.New(path.Join(config.Directory, config.Filename+"-%Y%m%d%H%M"), rotatelogs.WithRotationTime(rotateDuration),
+		rotatelogs.WithLinkName(filepath.Join(config.Directory, config.Filename)))
+	if err == nil {
+		return rlog
+	}
 	return &lumberjack.Logger{
 		Filename:   path.Join(config.Directory, config.Filename),
 		MaxBackups: config.MaxBackups, // files
