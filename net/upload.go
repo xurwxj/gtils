@@ -11,6 +11,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -119,7 +120,11 @@ func MUploadToRemote(surl, category, bucket, filePath, id string, header map[str
 				if err != nil {
 					// fmt.Println("Values in MUploadToRemote err: ", err)
 				}
-				if resCode := mUpGet(fmt.Sprintf("%s?%s", surl, pmv.Encode()), header); base.FindInInt64Slice([]int64{400, 404}, resCode) {
+				mUpGetURL := fmt.Sprintf("%s?%s", surl, pmv.Encode())
+				if strings.Index(surl, "?") >= 0 {
+					mUpGetURL = fmt.Sprintf("%s&%s", surl, pmv.Encode())
+				}
+				if resCode := mUpGet(mUpGetURL, header); base.FindInInt64Slice([]int64{400, 404}, resCode) {
 					rssd := mUpPost(surl, pm, buffer, header)
 					// DONE 需要返回上传进度
 					if rssd.Result.DfsID != "" && rssd.Result.DfsID != "OK" {
