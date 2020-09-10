@@ -27,7 +27,7 @@ func MUploadToRemote(surl, category, bucket, filePath, id string, header map[str
 	// DONE change to concurrency solid
 	// startTime := time.Now().UTC()
 	BufferSize := viper.GetInt("savePath.limit.uploadMinChunkSize")
-	if BufferSize == 0 {
+	if BufferSize < 5242880 {
 		BufferSize = 5 * 1024 * 1024
 	}
 	file, err := os.Open(filePath)
@@ -44,7 +44,6 @@ func MUploadToRemote(surl, category, bucket, filePath, id string, header map[str
 	}
 
 	filesize := int(fileinfo.Size())
-	// fmt.Println(filesize)
 
 	hasher := md5.New()
 	hasher.Write([]byte(category + bucket + filePath + fmt.Sprintf("%d", filesize) + fmt.Sprintf("%v", fileinfo.ModTime())))
@@ -61,6 +60,12 @@ func MUploadToRemote(surl, category, bucket, filePath, id string, header map[str
 		BufferSize = filesize / uLimit
 		concurrency = filesize / BufferSize
 	}
+	// fmt.Println("task: ", fileName, " size: ", filesize, " uLimit: ", uLimit, " concurrency: ", concurrency, " BufferSize: ", BufferSize)
+	if filesize <= BufferSize {
+		BufferSize = filesize
+		concurrency = 1
+	}
+
 	// buffer sizes that each of the go routine below should use. ReadAt
 	// returns an error if the buffer size is larger than the bytes returned
 	// from the file.
@@ -81,19 +86,18 @@ func MUploadToRemote(surl, category, bucket, filePath, id string, header map[str
 		concurrency++
 		chunksizes = append(chunksizes, c)
 	}
+	// fmt.Println("task: ", fileName, " size: ", filesize, " uLimit: ", uLimit, " concurrency: ", concurrency, " BufferSize: ", BufferSize)
 
 	dfsID := ""
 
 	var wg sync.WaitGroup
 	// wg.Add(concurrency)
-	// fmt.Println("start with ", concurrency, " uploads from ", startTime)
+	// fmt.Println(fileName, " start with ", concurrency, " uploads from ", startTime)
 	// okPart := 0
 	for i := 0; i < concurrency; i++ {
 		wg.Add(1)
+		// go doChunk(chunksizes, i, filesize, concurrency, BufferSize, file, &wg, &dfsID, category, bucket, fileName, filePath, identifier, surl, id, callback, header)
 		go func(chunksizes []chunk, i, filesize int) {
-			// go func() {
-			// defer wg.Done()
-			// fmt.Println(i, " start on ", time.Now().UTC())
 
 			chunk := chunksizes[i]
 			buffer := make([]byte, chunk.bufsize)
@@ -124,38 +128,55 @@ func MUploadToRemote(surl, category, bucket, filePath, id string, header map[str
 				if strings.Index(surl, "?") >= 0 {
 					mUpGetURL = fmt.Sprintf("%s&%s", surl, pmv.Encode())
 				}
-				if resCode := mUpGet(mUpGetURL, header); base.FindInInt64Slice([]int64{400, 404}, resCode) {
+				resCode, rmu := mUpGet(mUpGetURL, header)
+				if base.FindInInt64Slice([]int64{400, 404}, resCode) {
 					rssd := mUpPost(surl, pm, buffer, header)
 					// DONE 需要返回上传进度
 					if rssd.Result.DfsID != "" && rssd.Result.DfsID != "OK" {
 						dfsID = rssd.Result.DfsID
 						// okPart = okPart + 1
-						// fmt.Println(pm, "rs: ", rssd, " on ", time.Now().UTC())
+						// fmt.Println("rssd.Result.DfsID: ", rssd.Result.DfsID, " dfsID: ", *dfsID, " with pm: ", pm, "rs: ", rssd, " on ", time.Now().UTC())
 						if callback != nil {
 							callback(id, pm.TotalSize, pm.CurrentChunkSize, int64(pm.ChunkNumber))
 						}
-						wg.Done()
 					}
 					if rssd.Result.DfsID == "OK" {
 						// okPart = okPart + 1
-						// fmt.Println(pm, " rs: ", rssd, " on ", time.Now().UTC())
+						// fmt.Println("finish ", pm, " rs: ", rssd, " on ", time.Now().UTC())
 						if callback != nil {
 							callback(id, pm.TotalSize, pm.CurrentChunkSize, int64(pm.ChunkNumber))
 						}
-						wg.Done()
+					}
+				} else if resCode == 200 {
+					// DONE 需要返回上传进度
+					if rmu.Result.DfsID != "" && rmu.Result.DfsID != "OK" {
+						dfsID = rmu.Result.DfsID
+						// okPart = okPart + 1
+						// fmt.Println("rssd.Result.DfsID: ", rssd.Result.DfsID, " dfsID: ", *dfsID, " with pm: ", pm, "rs: ", rssd, " on ", time.Now().UTC())
+						if callback != nil {
+							callback(id, pm.TotalSize, pm.CurrentChunkSize, int64(pm.ChunkNumber))
+						}
+					}
+					if rmu.Result.DfsID == "OK" {
+						// okPart = okPart + 1
+						// fmt.Println("finish ", pm, " rs: ", rssd, " on ", time.Now().UTC())
+						if callback != nil {
+							callback(id, pm.TotalSize, pm.CurrentChunkSize, int64(pm.ChunkNumber))
+						}
 					}
 				}
 			}
-			// }()
+			wg.Done()
 		}(chunksizes, i, filesize)
 	}
 
 	wg.Wait()
-	if dfsID != "" {
-		// fmt.Println(filePath, " upload to: ", dfsID, " start from ", startTime, " to ", time.Now().UTC())
-	} else {
+	// fmt.Println(filePath, " upload to: ", dfsID, " upload to: ", dfsID, " done from ", startTime, " to ", time.Now().UTC())
+	if dfsID == "" {
+		// fmt.Println(filePath, " upload to: ", dfsID, " done from ", startTime, " to ", time.Now().UTC())
+		// } else {
 		// fmt.Println("need to reupload for file: ", filePath, " when concurrency: ", concurrency, " with dfsID: ", dfsID)
-		return MUploadToRemote(surl, category, bucket, filePath, id, header, callback)
+		// return MUploadToRemote(surl, category, bucket, filePath, id, header, callback)
 	}
 	return dfsID, nil
 }
@@ -211,23 +232,23 @@ func mUpPost(url string, p chunkObj, chunkData []byte, header map[string]string)
 		// fmt.Println("read res body err: ", err)
 		return mUpPost(url, p, chunkData, header)
 	}
+	// fmt.Println(p.Filename, " put data upload res data: ", string(data))
 	var rmu resMUp
-	if err := json.Unmarshal(data, &rmu); err == nil {
-		return rmu
-	} else if string(data) == "NotExist" {
-		// fmt.Println("data not exist nned to upload ")
-		return mUpPost(url, p, chunkData, header)
-	} else if string(data) == "OK" {
+	if string(data) == "OK" {
 		rmu.Result.DfsID = "OK"
 		return rmu
-	} else {
-		// fmt.Println("data upload err: ", err, " with data: ", string(data))
+	}
+	if err := json.Unmarshal(data, &rmu); err == nil {
+		return rmu
+	}
+	if string(data) == "NotExist" {
+		// fmt.Println("data not exist nned to upload ")
 		return mUpPost(url, p, chunkData, header)
 	}
 	return mUpPost(url, p, chunkData, header)
 }
 
-func mUpGet(url string, header map[string]string) int64 {
+func mUpGet(url string, header map[string]string) (int64, resMUp) {
 	var req *http.Request
 	var res *http.Response
 	var err error
@@ -242,21 +263,32 @@ func mUpGet(url string, header map[string]string) int64 {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	// req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Connection", "Keep-Alive")
+	var rmu resMUp
 
 	if err != nil {
-		return 500
+		return 500, rmu
 	}
 	res, err = client.Do(req)
 	if err != nil {
-		return 500
+		return 500, rmu
 	}
 	defer res.Body.Close()
-	// data, err := ioutil.ReadAll(res.Body)
-	// if err != nil {
-	// 	return 460
-	// }
-	// fmt.Println("res data: ", string(data))
-	return int64(res.StatusCode)
+	if res.StatusCode == 200 {
+		data, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return 460, rmu
+		}
+		if string(data) == "OK" {
+			rmu.Result.DfsID = "OK"
+			return 200, rmu
+		}
+		// fmt.Println(url, ": Get data upload res data: ", string(data))
+		// fmt.Println("res data: ", string(data))
+		if err := json.Unmarshal(data, &rmu); err == nil {
+			return 200, rmu
+		}
+	}
+	return int64(res.StatusCode), rmu
 }
 
 type chunk struct {
