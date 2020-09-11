@@ -1,10 +1,13 @@
 package base
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/gabriel-vasile/mimetype"
 )
 
 // CheckFileExistBackInfo Get file info if is on disk.
@@ -54,4 +57,37 @@ func GetFileNameExt(f string) (string, string) {
 		dfPurName = dfPurName[:lastDotIndex]
 	}
 	return dfPurName, ext
+}
+
+// GetFileMimeTypeExtByPath get file mimetype from file path
+func GetFileMimeTypeExtByPath(f string) (mime *mimetype.MIME) {
+	mime, _ = mimetype.DetectFile(f)
+	return
+}
+
+// GetFileMimeTypeExtByReader get file mimetype from file reader
+func GetFileMimeTypeExtByReader(f io.Reader) (mime *mimetype.MIME) {
+	mime, _ = mimetype.DetectReader(f)
+	return
+}
+
+// GetFileMimeTypeExtByBytes get file mimetype from file []byte
+func GetFileMimeTypeExtByBytes(f []byte) *mimetype.MIME {
+	return mimetype.Detect(f)
+}
+
+// CheckFileInMimeTypes check file mimetype in []string, such as []string{"text/plain", "text/html", "text/csv"}
+func CheckFileInMimeTypes(mime *mimetype.MIME, mts []string) bool {
+	return mimetype.EqualsAny(mime.String(), mts...)
+}
+
+// CheckFileIsBinaryByMimeType check file is binary or not by mimetype
+func CheckFileIsBinaryByMimeType(m *mimetype.MIME) bool {
+	isBinary := true
+	for mime := m; mime != nil; mime = mime.Parent() {
+		if mime.Is("text/plain") {
+			isBinary = false
+		}
+	}
+	return isBinary
 }
