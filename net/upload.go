@@ -176,7 +176,7 @@ func MUploadToRemote(surl, category, bucket, filePath, id string, header map[str
 		// fmt.Println(filePath, " upload to: ", dfsID, " done from ", startTime, " to ", time.Now().UTC())
 		// } else {
 		// fmt.Println("need to reupload for file: ", filePath, " when concurrency: ", concurrency, " with dfsID: ", dfsID)
-		// return MUploadToRemote(surl, category, bucket, filePath, id, header, callback)
+		return MUploadToRemote(surl, category, bucket, filePath, id, header, callback)
 	}
 	return dfsID, nil
 }
