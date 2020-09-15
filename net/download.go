@@ -17,7 +17,7 @@ import (
 )
 
 // ChunkDownloadEx able to resume downloading.
-func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, rangeSupport bool, callback func(id string, size, chunkSize, partNum int64)) (string, error) {
+func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRangeSupport bool, callback func(id string, size, chunkSize, partNum int64)) (string, error) {
 	// startTime := time.Now().UTC()
 	if savePath != "." && savePath != "./" {
 		if stat, err := os.Stat(savePath); os.IsNotExist(err) {
@@ -28,18 +28,18 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, rangeSuppo
 			return "", err
 		}
 	}
-	tsize, rangeSupport, tfileName, _ := GetSizeAndCheckRangeSupport(turl)
+	tsize, rangeSupport, tfileName, _ := GetSizeNameAndCheckRangeSupport(turl)
 	if size == 0 {
 		size = tsize
 	}
 	if fileName == "" {
 		fileName = tfileName
 	}
-	if !rangeSupport {
-		return FileDownload(savePath, fileName, turl)
+	if !rangeSupport && !enableRangeSupport {
+		return FileDownload(id, savePath, fileName, turl, callback)
 	}
 	chunkSize := viper.GetInt64("savePath.limit.downloadMinChunkSize")
-	if chunkSize < 1 {
+	if chunkSize < 1 || chunkSize > 10 {
 		chunkSize = 5
 	}
 	chunkSize = chunkSize * 1024 * 1024
@@ -56,6 +56,10 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, rangeSuppo
 		}
 		partialSize = chunkSize
 	}
+	// fmt.Println("88")
+	// fmt.Println("88 size:", size)
+	// fmt.Println("88 chunkSize:", chunkSize)
+	// fmt.Println("88:", fileName)
 
 	filePath := filepath.Join(savePath, fileName)
 	f, err := os.OpenFile(filePath, os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0666)
@@ -64,6 +68,7 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, rangeSuppo
 	}
 	// handleError(err)
 	defer f.Close()
+	// fmt.Println("99")
 
 	var start, end int64
 	filep := make(map[string]*os.File)
@@ -281,7 +286,7 @@ func (w *Worker) getRangeBody(start int64, end int64) (io.ReadCloser, int64, err
 // FileDownload issues a GET to url and saves the file to savePath.
 // If fileName is empty, FileDownload gets it from url. If still empty, FileDownload will make one by timestamp.
 // FileDownload returns the real filename and an error.
-func FileDownload(savePath, fileName, url string) (string, error) {
+func FileDownload(id, savePath, fileName, url string, callback func(id string, size, chunkSize, partNum int64)) (string, error) {
 	if savePath != "." && savePath != "./" {
 		if stat, err := os.Stat(savePath); os.IsNotExist(err) {
 			if err = os.MkdirAll(savePath, os.ModePerm); err != nil {
@@ -291,17 +296,30 @@ func FileDownload(savePath, fileName, url string) (string, error) {
 			return "", err
 		}
 	}
-	resp, err := http.Get(url)
+	client := &http.Client{Transport: &http.Transport{
+		Dial:              PrintLocalDial,
+		DisableKeepAlives: true,
+	}}
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		return "", err
+	}
+	resp, err := client.Do(req)
+
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
+	var fileSize int64
 	if fileName == "" {
-		_, _, fileName, _ = GetSizeAndCheckRangeSupport(url)
+		fileSize, _, fileName, _ = GetSizeNameAndCheckRangeSupport(url)
 	}
 	if fileName == "" {
 		fileName = fmt.Sprintf("%v", time.Now().UTC().Unix())
 	}
+	// fmt.Println("fileSize:", fileSize)
+	// fmt.Println("fileName: ", fileName)
 	filepath := filepath.Join(savePath, fileName)
 
 	// Create the file
@@ -311,25 +329,68 @@ func FileDownload(savePath, fileName, url string) (string, error) {
 	}
 	defer out.Close()
 
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return "", err
+	// // Write the body to file
+	// _, err = io.Copy(out, resp.Body)
+	// if err != nil {
+	// 	return "", err
+	// }
+	chunkSize := viper.GetInt64("savePath.limit.downloadMinChunkSize")
+	if chunkSize < 1 || chunkSize > 10 {
+		chunkSize = 5
+	}
+	chunkSize = chunkSize * 1024
+	buf := make([]byte, chunkSize)
+	for {
+		nr, er := resp.Body.Read(buf)
+		if nr > 0 {
+			nw, ew := out.Write(buf[0:nr])
+			if ew != nil {
+				err = ew
+				break
+			}
+			if nr != nw {
+				err = io.ErrShortWrite
+				break
+			}
+			callback(id, fileSize, int64(nw), 0)
+		}
+		if er != nil {
+			if er != io.EOF {
+				err = er
+			}
+			break
+		}
 	}
 	return fileName, nil
 }
 
-// GetSizeAndCheckRangeSupport checks whether url supports header "accpet-ranges".
+// GetSizeNameAndCheckRangeSupport checks whether url supports header "accpet-ranges".
 // If so, returns content length.
-func GetSizeAndCheckRangeSupport(url string) (size int64, rangeSupport bool, fileName string, err error) {
-	res, err := http.Head(url)
+func GetSizeNameAndCheckRangeSupport(url string) (size int64, rangeSupport bool, fileName string, err error) {
+	client := &http.Client{Transport: &http.Transport{
+		Dial:              PrintLocalDial,
+		DisableKeepAlives: true,
+	}}
+	req, err := http.NewRequest("GET", url, nil)
+
 	if err != nil {
-		return 0, false, "", err
+		return
 	}
-	header := res.Header
-	size, err = strconv.ParseInt(header["Content-Length"][0], 10, 64)
+	sheader := make(map[string]string)
+	sheader["range"] = "bytes=0-1"
+	req = setHeader(req, sheader)
+	res, err := client.Do(req)
+
 	if err != nil {
-		return 0, false, "", err
+		return
+	}
+	// fmt.Println(res.Header)
+	defer res.Body.Close()
+	header := res.Header
+	contentRangeHeader := header["Content-Range"]
+	if len(contentRangeHeader) > 0 {
+		crh := strings.Split(contentRangeHeader[0], "/")[1]
+		size, err = strconv.ParseInt(crh, 10, 64)
 	}
 	if hcd, ok := header["Content-Disposition"]; ok && len(hcd) > 0 {
 		hcds := strings.Split(hcd[0], "=")
@@ -340,8 +401,8 @@ func GetSizeAndCheckRangeSupport(url string) (size int64, rangeSupport bool, fil
 		}
 	}
 	acceptRanges, supported := header["Accept-Ranges"]
-	if !supported || (supported && acceptRanges[0] != "bytes") {
-		return size, false, fileName, nil
+	if supported && acceptRanges[0] == "bytes" {
+		rangeSupport = true
 	}
-	return size, true, fileName, nil
+	return
 }
