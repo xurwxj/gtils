@@ -301,6 +301,20 @@ func FileDownload(id, savePath, fileName, url string, callback func(id string, s
 			return "", err
 		}
 	}
+	var fileSize int64
+	if fileName == "" {
+		fileSize, _, fileName, _ = GetSizeNameAndCheckRangeSupport(url)
+	}
+	if fileName == "" {
+		fileName = fmt.Sprintf("%v", time.Now().UTC().Unix())
+	}
+	// fmt.Println("fileSize:", fileSize)
+	// fmt.Println("fileName: ", fileName)
+	filePath := filepath.Join(savePath, fileName)
+	fi := base.CheckFileExistBackInfo(filePath, true)
+	if fi.Size() == fileSize {
+		return fileName, nil
+	}
 	client := &http.Client{Transport: &http.Transport{
 		Dial:              PrintLocalDial,
 		DisableKeepAlives: true,
@@ -316,19 +330,9 @@ func FileDownload(id, savePath, fileName, url string, callback func(id string, s
 		return "", err
 	}
 	defer resp.Body.Close()
-	var fileSize int64
-	if fileName == "" {
-		fileSize, _, fileName, _ = GetSizeNameAndCheckRangeSupport(url)
-	}
-	if fileName == "" {
-		fileName = fmt.Sprintf("%v", time.Now().UTC().Unix())
-	}
-	// fmt.Println("fileSize:", fileSize)
-	// fmt.Println("fileName: ", fileName)
-	filepath := filepath.Join(savePath, fileName)
 
 	// Create the file
-	out, err := os.Create(filepath)
+	out, err := os.Create(filePath)
 	if err != nil {
 		return "", err
 	}
