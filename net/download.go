@@ -64,7 +64,7 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRang
 
 	filePath := filepath.Join(savePath, fileName)
 	fi := base.CheckFileExistBackInfo(filePath, true)
-	if fi.Size() == size {
+	if fi != nil && fi.Size() == size {
 		return fileName, nil
 	}
 	f, err := os.OpenFile(filePath, os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0666)
@@ -312,7 +312,7 @@ func FileDownload(id, savePath, fileName, url string, callback func(id string, s
 	// fmt.Println("fileName: ", fileName)
 	filePath := filepath.Join(savePath, fileName)
 	fi := base.CheckFileExistBackInfo(filePath, true)
-	if fi.Size() == fileSize {
+	if fi != nil && fi.Size() == fileSize {
 		return fileName, nil
 	}
 	client := &http.Client{Transport: &http.Transport{
