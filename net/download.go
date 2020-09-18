@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/xurwxj/gtils/base"
 	"github.com/xurwxj/viper"
 )
 
@@ -62,6 +63,10 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRang
 	// fmt.Println("88:", fileName)
 
 	filePath := filepath.Join(savePath, fileName)
+	fi := base.CheckFileExistBackInfo(filePath, true)
+	if fi.Size() == size {
+		return fileName, nil
+	}
 	f, err := os.OpenFile(filePath, os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return "", err
