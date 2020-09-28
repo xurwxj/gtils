@@ -3,6 +3,7 @@ package net
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/rs/zerolog"
@@ -16,8 +17,32 @@ type MqttManager struct {
 
 // Config mqtt config struct
 type Config struct {
-	Log  *zerolog.Logger
-	Opts mqtt.ClientOptions
+	Log          *zerolog.Logger
+	Addr         string
+	ClientID     string
+	Username     string
+	Password     string
+	CleanSession bool
+	// Order                   bool
+	// WillEnabled             bool
+	// WillTopic               string
+	// WillPayload             []byte
+	// WillQos                 byte
+	// WillRetained            bool
+	// ProtocolVersion         uint
+	// protocolVersionExplicit bool
+	// TLSConfig               *tls.Config
+	KeepAlive            time.Duration
+	PingTimeout          time.Duration
+	ConnectTimeout       time.Duration
+	MaxReconnectInterval time.Duration
+	WriteTimeout         time.Duration
+	AutoReconnect        bool
+	// Store                   mqtt.Store
+	DefaultPublishHandler mqtt.MessageHandler
+	OnConnect             mqtt.OnConnectHandler
+	OnConnectionLost      mqtt.ConnectionLostHandler
+	ResumeSubs            bool
 }
 
 // GetManager mqtt obj init
@@ -25,7 +50,41 @@ func GetManager(config *Config) (*MqttManager, error) {
 	var c mqtt.Client
 	manager := &MqttManager{}
 	if manager == nil || manager.Client == nil {
-		c = mqtt.NewClient(&config.Opts)
+		opts := mqtt.NewClientOptions()
+		opts.AddBroker(config.Addr)
+		opts.SetClientID(config.ClientID)
+		opts.SetUsername(config.Username)
+		opts.SetPassword(config.Password)
+		opts.SetCleanSession(config.CleanSession)
+		if config.KeepAlive == 0 {
+			config.KeepAlive = 30 * time.Second
+		}
+		opts.SetKeepAlive(config.KeepAlive)
+		if config.PingTimeout == 0 {
+			config.PingTimeout = 5 * time.Second
+		}
+		opts.SetPingTimeout(config.PingTimeout)
+		if config.ConnectTimeout == 0 {
+			config.ConnectTimeout = 20 * time.Second
+		}
+		opts.SetConnectTimeout(config.ConnectTimeout)
+		if config.MaxReconnectInterval == 0 {
+			config.MaxReconnectInterval = 10 * time.Second
+		}
+		opts.SetMaxReconnectInterval(config.MaxReconnectInterval)
+		opts.SetWriteTimeout(config.WriteTimeout)
+		opts.SetAutoReconnect(config.AutoReconnect)
+		opts.SetResumeSubs(config.ResumeSubs)
+		if config.DefaultPublishHandler != nil {
+			opts.SetDefaultPublishHandler(config.DefaultPublishHandler)
+		}
+		if config.OnConnect != nil {
+			opts.SetOnConnectHandler(config.OnConnect)
+		}
+		if config.OnConnectionLost != nil {
+			opts.SetConnectionLostHandler(config.OnConnectionLost)
+		}
+		c = mqtt.NewClient(opts)
 		// fmt.Println(opts.Servers)
 		if token := c.Connect(); token.Wait() && token.Error() != nil {
 			config.Log.Err(token.Error()).Interface("config", config).Msg("mqtt connect token error")
