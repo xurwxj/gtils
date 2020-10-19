@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -97,4 +99,59 @@ func CheckIPPublic(ip string) (bool, error) {
 		return true, nil
 	}
 	return false, fmt.Errorf("unknown")
+}
+
+// PaginationFromMap generate pagination from map
+func PaginationFromMap(m map[string]interface{}, pSize, defaultSize int64) (map[string]interface{}, int, int) {
+	var page = 1
+	var pageSize = defaultSize
+	if pSize > 0 {
+		pageSize = pSize
+	}
+	qPSize, has := m["pageSize"]
+	if has {
+		qPSizeV, qPSerr := strconv.ParseInt(qPSize.(string), 10, 64)
+		if qPSerr == nil {
+			pageSize = qPSizeV
+		}
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	qPage, pHas := m["page"]
+	if pHas {
+		qPageV, qPErr := strconv.Atoi(qPage.(string))
+		if qPErr == nil {
+			page = qPageV
+		}
+	}
+	if page < 1 {
+		page = 1
+	}
+	m["page"] = page
+	m["pageSize"] = pageSize
+	m["offset"] = (page - 1) * int(pageSize)
+	// return map[string]interface{}{"page": page, "pageSize": pageSize, "offset": (page - 1) * int(pageSize)}, int(page), int(pageSize)
+	return m, int(page), int(pageSize)
+}
+
+// QueryBytesToMap query bytes convert to map
+// s := "A=B&C=D&E=F"
+func QueryBytesToMap(query []byte) map[string]string {
+	m := make(map[string]string)
+	queries := strings.Split(string(query), "&")
+	for _, q := range queries {
+		q = strings.TrimSpace(q)
+		if q != "" {
+			zs := strings.Split(q, "=")
+			if len(zs) == 2 {
+				k := strings.TrimSpace(zs[0])
+				v := strings.TrimSpace(zs[1])
+				if k != "" && v != "" {
+					m[k] = v
+				}
+			}
+		}
+	}
+	return m
 }
