@@ -1,6 +1,7 @@
 package net
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -65,4 +66,35 @@ func PrintLocalDial(network, addr string) (net.Conn, error) {
 	// fmt.Println("PrintLocalDial connect done, use", conn.LocalAddr().String())
 
 	return conn, err
+}
+
+// CheckIPPublic check ip is not a private ip or multicast ip
+func CheckIPPublic(ip string) (bool, error) {
+	var privateIPBlocks []*net.IPNet
+	for _, cidr := range []string{
+		"127.0.0.0/8",    // IPv4 loopback
+		"10.0.0.0/8",     // RFC1918
+		"172.16.0.0/12",  // RFC1918
+		"192.168.0.0/16", // RFC1918
+		"169.254.0.0/16", // RFC3927 link-local
+		"::1/128",        // IPv6 loopback
+		"fe80::/10",      // IPv6 link-local
+		"fc00::/7",       // IPv6 unique local addr
+	} {
+		_, block, err := net.ParseCIDR(cidr)
+		if err == nil {
+			privateIPBlocks = append(privateIPBlocks, block)
+		}
+		return false, err
+	}
+	targetIP := net.ParseIP(ip)
+	if targetIP != nil && !targetIP.IsLinkLocalMulticast() && !targetIP.IsGlobalUnicast() {
+		for _, block := range privateIPBlocks {
+			if block.Contains(targetIP) {
+				return false, fmt.Errorf("%s", block.Network())
+			}
+		}
+		return true, nil
+	}
+	return false, fmt.Errorf("unknown")
 }
