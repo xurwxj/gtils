@@ -102,7 +102,11 @@ func CheckIPPublic(ip string) (bool, error) {
 }
 
 // PaginationFromMap generate pagination from map
-func PaginationFromMap(m map[string]interface{}, pSize, defaultSize int64) (map[string]interface{}, int, int) {
+func PaginationFromMap(m map[string]string, pSize, defaultSize int64) (map[string]interface{}, int, int) {
+	rs := make(map[string]interface{})
+	for k, v := range m {
+		rs[k] = v
+	}
 	var page = 1
 	var pageSize = defaultSize
 	if pSize > 0 {
@@ -110,7 +114,7 @@ func PaginationFromMap(m map[string]interface{}, pSize, defaultSize int64) (map[
 	}
 	qPSize, has := m["pageSize"]
 	if has {
-		qPSizeV, qPSerr := strconv.ParseInt(qPSize.(string), 10, 64)
+		qPSizeV, qPSerr := strconv.ParseInt(qPSize, 10, 64)
 		if qPSerr == nil {
 			pageSize = qPSizeV
 		}
@@ -118,9 +122,10 @@ func PaginationFromMap(m map[string]interface{}, pSize, defaultSize int64) (map[
 	if pageSize < 1 {
 		pageSize = 10
 	}
+	rs["pageSize"] = pageSize
 	qPage, pHas := m["page"]
 	if pHas {
-		qPageV, qPErr := strconv.Atoi(qPage.(string))
+		qPageV, qPErr := strconv.Atoi(qPage)
 		if qPErr == nil {
 			page = qPageV
 		}
@@ -128,11 +133,10 @@ func PaginationFromMap(m map[string]interface{}, pSize, defaultSize int64) (map[
 	if page < 1 {
 		page = 1
 	}
-	m["page"] = page
-	m["pageSize"] = pageSize
-	m["offset"] = (page - 1) * int(pageSize)
+	rs["page"] = page
+	rs["offset"] = (page - 1) * int(pageSize)
 	// return map[string]interface{}{"page": page, "pageSize": pageSize, "offset": (page - 1) * int(pageSize)}, int(page), int(pageSize)
-	return m, int(page), int(pageSize)
+	return rs, int(page), int(pageSize)
 }
 
 // QueryBytesToMap query bytes convert to map
