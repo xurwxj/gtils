@@ -25,45 +25,41 @@ func GetStringFromInterface(i interface{}) string {
 	return string(rs)
 }
 
-func StructToMap(data interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-	// fmt.Println("v: ", reflect.ValueOf(data))
-	elem := reflect.ValueOf(data)
-	size := elem.NumField()
-	// fmt.Println("s: ", size)
-
-	for i := 0; i < size; i++ {
-		// fmt.Println("f: ", elem.Field(i))
-		// fmt.Println("t: ", elem.Type().Field(i))
-		field := elem.Type().Field(i).Name
-		value := elem.Field(i).Interface()
-		result[field] = value
+// StructSliceToJSONTagMap convert struct slice to map by struct's json tag
+func StructSliceToJSONTagMap(items interface{}) ([]interface{}, error) {
+	rs := make([]interface{}, 0)
+	dataByte, err := json.Marshal(items)
+	if err == nil {
+		err = json.Unmarshal(dataByte, &rs)
 	}
-
-	return result
+	return rs, err
 }
 
-func StructToJsonTagMap(data interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-	elem := reflect.ValueOf(data).Elem()
-	size := elem.NumField()
-
-	for i := 0; i < size; i++ {
-		field := elem.Type().Field(i).Tag.Get("json")
-		value := elem.Field(i).Interface()
-		result[field] = value
+// StructToJSONTagMap convert struct to map by struct's json tag
+func StructToJSONTagMap(item interface{}) map[string]interface{} {
+	res := map[string]interface{}{}
+	if item == nil {
+		return res
 	}
+	v := reflect.TypeOf(item)
+	reflectValue := reflect.ValueOf(item)
+	reflectValue = reflect.Indirect(reflectValue)
 
-	return result
-}
-
-func StructToJsonTagMap2(data interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-
-	b, _ := json.Marshal(data)
-	json.Unmarshal(b, &result)
-
-	return result
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	for i := 0; i < v.NumField(); i++ {
+		tag := v.Field(i).Tag.Get("json")
+		field := reflectValue.Field(i).Interface()
+		if tag != "" && tag != "-" {
+			if v.Field(i).Type.Kind() == reflect.Struct {
+				res[tag] = StructToJSONTagMap(field)
+			} else {
+				res[tag] = field
+			}
+		}
+	}
+	return res
 }
 
 // StructToFormMap decodes an object into a map,
