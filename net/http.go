@@ -155,3 +155,21 @@ func QueryBytesToMap(query []byte) map[string]string {
 	}
 	return m
 }
+
+// PaginationInfo generate pagination result info object
+func PaginationInfo(page, pageSize, defaultSize, total int) map[string]int {
+	if pageSize == 0 {
+		pageSize = defaultSize
+	}
+	if pageSize == 0 {
+		pageSize = 10
+	}
+	if page == 0 {
+		page = 1
+	}
+	totalPage := total / pageSize
+	if total%pageSize > 0 {
+		totalPage++
+	}
+	return map[string]int{"page": page, "pageSize": pageSize, "pages": totalPage, "total": total}
+}
