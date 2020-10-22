@@ -11,13 +11,14 @@ import (
 
 	"github.com/cloudfoundry/jibber_jabber"
 	"github.com/rs/zerolog"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/disk"
-	"github.com/shirou/gopsutil/host"
-	"github.com/shirou/gopsutil/mem"
+	"github.com/xurwxj/gopsutil/cpu"
+	"github.com/xurwxj/gopsutil/disk"
+	"github.com/xurwxj/gopsutil/host"
+	"github.com/xurwxj/gopsutil/mem"
 	"github.com/xurwxj/gtils/base"
 )
 
+// GetOsInfo get os info with hardware and software
 func GetOsInfo(Log *zerolog.Logger) SysInfoObj {
 	var rs SysInfoObj
 	var err error
@@ -146,6 +147,9 @@ func GetOsInfo(Log *zerolog.Logger) SysInfoObj {
 				Log.Err(err).Msg("GetOsInfo get gpu info under mac")
 			}
 		}
+		// rs, err := disk.Partitions(true)
+		// fmt.Println("rs: ", rs)
+		// fmt.Println("err: ", err)
 		if diskStat, err := disk.Usage(path); err == nil {
 			rs.Hardware.HDDSize = int64(diskStat.Total)
 			rs.Hardware.HDDRemainSize = int64(diskStat.Free)
@@ -161,6 +165,8 @@ func GetOsInfo(Log *zerolog.Logger) SysInfoObj {
 	rs.Soft = CheckOsExtInfo(rs.Soft, Log)
 	return rs
 }
+
+// GetHostID get host unique id
 func GetHostID() string {
 	var n *host.InfoStat
 	var err error
@@ -173,6 +179,7 @@ func GetHostID() string {
 	return ""
 }
 
+// CheckOsExtInfo check os lang/resolution info
 func CheckOsExtInfo(OssE OSSoftExtObj, Log *zerolog.Logger) OSSoftExtObj {
 	if OssE.Resolution == "" {
 		OssE.Resolution = "unknown"
