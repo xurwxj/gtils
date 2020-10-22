@@ -1,7 +1,6 @@
 package net
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -127,7 +126,7 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRang
 	// After all workers exit, check if someone has reached max error
 	select {
 	case <-reachedMaxErr:
-		return "", errors.New("maxWorkerReachedErr")
+		return "", fmt.Errorf("maxWorkerReachedErr:%v", workerCount)
 	default:
 	}
 	if err = mergeFileAndClean(f, filep, fileNames); err != nil {
