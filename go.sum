@@ -388,8 +388,8 @@ github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 h1:nIPpBwaJSVYIxUFsDv3M8ofm
 github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8/go.mod h1:HUYIGzjTL3rfEspMxjDjgmT5uz5wzYJKVo23qUhYTos=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
-github.com/xurwxj/gopsutil v2.20.11+incompatible h1:yekDviICpOHuq1G4FE3ZqMhR+rbqq+onTGl9pR7v+No=
-github.com/xurwxj/gopsutil v2.20.11+incompatible/go.mod h1:lwzBP0+/YeLzYQwzmq97hIgRihfQobnQt0LEN9piLgo=
+github.com/xurwxj/gopsutil v0.0.0-20201022031607-51ca59cb5339 h1:8xU/yI8ULEiCKPTji1yfUR1p6VZuuBkOPpXyLeepDIU=
+github.com/xurwxj/gopsutil v0.0.0-20201022031607-51ca59cb5339/go.mod h1:lwzBP0+/YeLzYQwzmq97hIgRihfQobnQt0LEN9piLgo=
 github.com/xurwxj/viper v1.7.1 h1:FPzUYdSATWgFRNMLFbdxdIjtgiy7P9sfJTmtf2Fj0Kg=
 github.com/xurwxj/viper v1.7.1/go.mod h1:r7ho3ePlL408sWN0SJash5amVScExFa920zAtw9+YRs=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
