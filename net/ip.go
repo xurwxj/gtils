@@ -26,7 +26,7 @@ func CheckIPPublic(ip string) (bool, error) {
 		}
 	}
 	targetIP := net.ParseIP(ip)
-	if targetIP != nil && !targetIP.IsLinkLocalMulticast() && !targetIP.IsGlobalUnicast() {
+	if targetIP != nil && !targetIP.IsLinkLocalMulticast() {
 		for _, block := range privateIPBlocks {
 			if block.Contains(targetIP) {
 				return false, fmt.Errorf("%s", block.Network())
