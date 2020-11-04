@@ -50,8 +50,8 @@ func StructToJSONTagMap(item interface{}) map[string]interface{} {
 	}
 	for i := 0; i < v.NumField(); i++ {
 		tag := v.Field(i).Tag.Get("json")
-		field := reflectValue.Field(i).Interface()
 		if tag != "" && tag != "-" {
+			field := reflectValue.Field(i).Interface()
 			if v.Field(i).Type.Kind() == reflect.Struct {
 				res[tag] = StructToJSONTagMap(field)
 			} else {
