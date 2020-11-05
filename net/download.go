@@ -126,7 +126,9 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRang
 	// After all workers exit, check if someone has reached max error
 	select {
 	case <-reachedMaxErr:
-		return "", fmt.Errorf("maxWorkerReachedErr:%v", workerCount)
+		os.RemoveAll(savePath)
+		return ChunkDownloadEx(savePath, fileName, turl, id, size, enableRangeSupport, callback)
+		// return "", fmt.Errorf("maxWorkerReachedErr:%v", workerCount)
 	default:
 	}
 	if err = mergeFileAndClean(f, filep, fileNames); err != nil {
