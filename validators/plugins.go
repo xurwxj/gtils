@@ -7,8 +7,10 @@ import (
 
 	"github.com/fatih/structs"
 	validator "github.com/go-playground/validator/v10"
+	"github.com/xurwxj/gtils/base"
 )
 
+// ValidStruct return json string error
 func ValidStruct(Validate *validator.Validate, u interface{}) string {
 	err := Validate.Struct(u)
 	if err != nil {
@@ -40,6 +42,12 @@ func ValidStruct(Validate *validator.Validate, u interface{}) string {
 	return ""
 }
 
+//IsCronOn check field is a formal cronable string
+func IsCronOn(fl validator.FieldLevel) bool {
+	return base.CronAbleFormat(fl.Field().String())
+}
+
+// CantBothEmpty depecrated
 func CantBothEmpty(fl validator.FieldLevel) bool {
 	tf, tk, hasTargetField := fl.GetStructFieldOK()
 	if hasTargetField && tk == reflect.String && strings.TrimSpace(tf.String()) != "" {
