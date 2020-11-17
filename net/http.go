@@ -1,10 +1,13 @@
 package net
 
 import (
+	"bufio"
+	"bytes"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -58,4 +61,42 @@ func PrintLocalDial(network, addr string) (net.Conn, error) {
 	}
 
 	return dial.Dial(network, addr)
+}
+
+// ParseHeader parse header []byte to http.Header
+func ParseHeader(headerByte []byte) (http.Header, error) {
+	var h http.Header
+	reader := bufio.NewReader(bytes.NewReader(headerByte))
+
+	reqHeader, err := http.ReadRequest(reader)
+	if err == nil {
+		h = reqHeader.Header
+	}
+
+	return h, err
+
+}
+
+// GetCookieFromHeaderByte get cookie value from headerByte by key name
+func GetCookieFromHeaderByte(headerByte []byte, key string) (string, error) {
+	h, err := ParseHeader(headerByte)
+	if err == nil {
+		cookieStrs := h.Get("Cookie")
+		cookieStrs = strings.TrimSpace(cookieStrs)
+		if cookieStrs != "" {
+			for _, cookieObjStr := range strings.Split(cookieStrs, ";") {
+				cookieObjStr = strings.TrimSpace(cookieObjStr)
+				if cookieObjStr != "" {
+					zs := strings.Split(cookieObjStr, "=")
+					if len(zs) == 2 {
+						k := strings.TrimSpace(zs[0])
+						if k == key {
+							return strings.TrimSpace(zs[1]), nil
+						}
+					}
+				}
+			}
+		}
+	}
+	return "", err
 }

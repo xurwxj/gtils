@@ -16,6 +16,7 @@ require (
 	github.com/mholt/archiver/v3 v3.3.2
 	github.com/rs/zerolog v1.20.0
 	github.com/satori/go.uuid v1.2.0
+	github.com/spf13/cast v1.3.1
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/xurwxj/gopsutil v0.0.0-20201022031607-51ca59cb5339
 	github.com/xurwxj/viper v1.7.1
