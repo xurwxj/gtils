@@ -4,7 +4,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"path/filepath"
 	"time"
 
 	rotatelogs "github.com/lestrrat/go-file-rotatelogs"
@@ -91,8 +90,7 @@ func newRollingFile(config Config) io.Writer {
 	if err != nil {
 		rotateDuration = time.Duration(24 * time.Hour)
 	}
-	rlog, err := rotatelogs.New(path.Join(config.Directory, config.Filename+"-%Y%m%d%H%M"), rotatelogs.WithRotationTime(rotateDuration),
-		rotatelogs.WithLinkName(filepath.Join(config.Directory, config.Filename)))
+	rlog, err := rotatelogs.New(path.Join(config.Directory, config.Filename+"-%Y%m%d%H%M"), rotatelogs.WithRotationTime(rotateDuration))
 	if err == nil {
 		return rlog
 	}
