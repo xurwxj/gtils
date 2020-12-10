@@ -60,19 +60,25 @@ func HasFilesInZip(filename string, exts []string) (bool, error) {
 
 func unzip(tFile, targetDir, targetCharset string) error {
 	// zip.FileInfoHeader(tFile)
-	var err error
-	zipReader, _ := zip.OpenReader(tFile)
+	zipReader, err := zip.OpenReader(tFile)
+	if err != nil {
+		return err
+	}
 	if zipReader != nil {
 		for _, file := range zipReader.Reader.File {
 			fHeader := file.FileHeader
 			fname := []byte(file.Name)
-			if fHeader.NonUTF8 {
+			fname, err = Decode([]byte(file.Name), "utf8")
+			if fHeader.NonUTF8 && err != nil {
 				// fmt.Println("file.Name: ", file.Name)
 				fname, err = Decode([]byte(file.Name), targetCharset)
 				// fmt.Println("file.Name decode: ", string(fname))
 				if err != nil {
 					return err
 				}
+			}
+			if err != nil {
+				return err
 			}
 			tname := string(fname)
 
@@ -91,7 +97,8 @@ func unzip(tFile, targetDir, targetCharset string) error {
 				// fmt.Println("Directory Created:", extractedFilePath)
 				os.MkdirAll(extractedFilePath, file.Mode())
 			} else {
-				// fmt.Println("File extracted:", tname)
+				upPath := filepath.Dir(extractedFilePath)
+				os.MkdirAll(upPath, os.ModePerm)
 
 				outputFile, err := os.OpenFile(
 					extractedFilePath,
@@ -151,6 +158,7 @@ var encodings = map[string]encoding.Encoding{
 	"iso2022jp":         japanese.ISO2022JP,
 	"shiftjis":          japanese.ShiftJIS,
 	"euckr":             korean.EUCKR,
+	"utf8":              unicode.UTF8,
 	"utf16be":           unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM),
 	"utf16le":           unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
 }
