@@ -88,6 +88,7 @@ func GetManager(config *Config) (*MqttManager, error) {
 		// fmt.Println(opts.Servers)
 		if token := c.Connect(); token.Wait() && token.Error() != nil {
 			config.Log.Err(token.Error()).Interface("config", config).Msg("mqtt connect token error")
+			return nil, token.Error()
 		}
 	}
 	if c != nil {
@@ -101,7 +102,7 @@ func GetManager(config *Config) (*MqttManager, error) {
 
 // Publish mqtt publish func wrapper
 func (m *MqttManager) Publish(topic string, qos byte, payload interface{}) error {
-	if m == nil {
+	if m == nil || m.Client == nil {
 		err := fmt.Errorf("disconnectedErr")
 		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt publish error, m nil")
 		return err
@@ -121,7 +122,7 @@ func (m *MqttManager) Publish(topic string, qos byte, payload interface{}) error
 
 // RetainPublish mqtt publish with retain func wrapper
 func (m *MqttManager) RetainPublish(topic string, qos byte, payload interface{}) error {
-	if m == nil {
+	if m == nil || m.Client == nil {
 		err := fmt.Errorf("disconnectedErr")
 		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt RetainPublish error, m nil")
 		return err
@@ -141,7 +142,7 @@ func (m *MqttManager) RetainPublish(topic string, qos byte, payload interface{})
 
 // Subscribe mqtt Subscribe func wrapper
 func (m *MqttManager) Subscribe(topic string, qos byte, callback func(mqtt.Client, mqtt.Message)) error {
-	if m == nil {
+	if m == nil || m.Client == nil {
 		err := fmt.Errorf("disconnectedErr")
 		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt subscribe error, m nil")
 		return err
@@ -155,7 +156,7 @@ func (m *MqttManager) Subscribe(topic string, qos byte, callback func(mqtt.Clien
 
 // UnSubscribe mqtt Subscribe func wrapper
 func (m *MqttManager) UnSubscribe(topic string) error {
-	if m == nil {
+	if m == nil || m.Client == nil {
 		err := fmt.Errorf("disconnectedErr")
 		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt UnSubscribe error, m nil")
 		return err
@@ -169,5 +170,7 @@ func (m *MqttManager) UnSubscribe(topic string) error {
 
 // Close mqtt disconnect when system exit
 func (m *MqttManager) Close(t uint) {
-	m.Client.Disconnect(t)
+	if m != nil && m.Client != nil {
+		m.Client.Disconnect(t)
+	}
 }
