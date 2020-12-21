@@ -14,12 +14,14 @@ require (
 	github.com/lestrrat/go-file-rotatelogs v0.0.0-20180223000712-d3151e2a480f
 	github.com/lestrrat/go-strftime v0.0.0-20180220042222-ba3bf9c1d042 // indirect
 	github.com/mholt/archiver/v3 v3.3.2
+	github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32 // indirect
 	github.com/rs/zerolog v1.20.0
 	github.com/satori/go.uuid v1.2.0
-	github.com/spf13/cast v1.3.1
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/xurwxj/gopsutil v0.0.0-20201022031607-51ca59cb5339
 	github.com/xurwxj/viper v1.7.1
+	golang.org/x/net v0.0.0-20201216054612-986b41b23924 // indirect
 	golang.org/x/text v0.3.3
+	gopkg.in/h2non/gentleman.v2 v2.0.4
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )

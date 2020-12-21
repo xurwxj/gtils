@@ -3,13 +3,50 @@ package net
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"strings"
 	"time"
+
+	validator "github.com/go-playground/validator/v10"
+	"github.com/xurwxj/gtils/validators"
+	"gopkg.in/h2non/gentleman.v2"
+	"gopkg.in/h2non/gentleman.v2/plugins/body"
 )
+
+// RemoteReq remote req object
+type RemoteReq struct {
+	// 要请求的网址
+	URL string `json:"url" validate:"required"`
+	// 请求方法 大写的POST/GET...
+	Method  string `json:"method" validate:"required"`
+	Body    io.Reader
+	Headers map[string]string
+}
+
+// RemoteHTTPClient remote http client use gentleman
+func RemoteHTTPClient(reqData RemoteReq, validor *validator.Validate) ([]byte, string, error) {
+	validRS := validators.ValidStruct(validor, reqData)
+	if validRS != "" {
+		return nil, validRS, fmt.Errorf(validRS)
+	}
+	cli := gentleman.New()
+	cli.URL(reqData.URL)
+	req := cli.Request()
+	req.Method(reqData.Method)
+	req.Use(body.Reader(reqData.Body))
+	for k, v := range reqData.Headers {
+		req.SetHeader(k, v)
+	}
+	res, err := req.Send()
+	if err != nil {
+		return nil, "", err
+	}
+	return res.Bytes(), "", nil
+}
 
 // Remote issues a POST to url with header and body resolved from formBody and env, returns the response body.
 func Remote(url, method string, body io.Reader, header map[string]string) ([]byte, string, error) {
