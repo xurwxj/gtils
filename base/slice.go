@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"math/rand"
 	"reflect"
 	"strconv"
 	"strings"
@@ -123,4 +124,9 @@ func InsertSlice(slice, insertion []interface{}, index int) []interface{} {
 	at += copy(result[at:], insertion)
 	copy(result[at:], slice[index:])
 	return result
+}
+
+func GetOneRand(s []int) int {
+	r := rand.New(rand.NewSource(int64(len(s))))
+	return s[r.Intn(len(s))]
 }
