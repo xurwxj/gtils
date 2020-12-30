@@ -1,6 +1,7 @@
 package net
 
 import (
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -55,6 +56,8 @@ func QueryBytesToMap(query []byte) map[string]string {
 			if len(zs) == 2 {
 				k := strings.TrimSpace(zs[0])
 				v := strings.TrimSpace(zs[1])
+				k, _ = url.QueryUnescape(k)
+				v, _ = url.QueryUnescape(v)
 				if k != "" && v != "" {
 					m[k] = v
 				}
