@@ -208,7 +208,7 @@ func CronTriggerAble(cronOn string) bool {
 
 // CronAbleFormat check cronOn format
 func CronAbleFormat(cronOn string) bool {
-	cronOnArr := strings.Split(cronOn, " ")
+	cronOnArr := strings.Split(strings.TrimSpace(cronOn), " ")
 	if len(cronOnArr) != 4 {
 		return false
 	}
