@@ -1,6 +1,7 @@
 package base
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
 	"os"
@@ -21,6 +22,53 @@ func CheckFileExistBackInfo(file string, ignoreZero bool) os.FileInfo {
 		return fi
 	}
 	return nil
+}
+
+// WriteFile writes data to a file named by name under path.
+// WrtieFile creates the path and file if not exist, truncating the file if already exists.
+func WriteFile(path, name string, data []byte) error {
+	CheckPathExistOrCreate(path)
+	out, err := os.Create(filepath.Join(path, name))
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CheckPathExistOrCreate creates tPath if it does not exist.
+func CheckPathExistOrCreate(tPath string) {
+	if _, err := os.Stat(tPath); os.IsNotExist(err) {
+		os.MkdirAll(tPath, os.ModePerm)
+	}
+}
+
+// CheckPathExistOrCreateWithMode check path exist or not, create when not exist
+func CheckPathExistOrCreateWithMode(tPath, mode string) {
+	if _, err := os.Stat(tPath); os.IsNotExist(err) {
+		os.MkdirAll(tPath, os.ModePerm)
+	}
+}
+
+// CheckFileExsit Get download info from bbolt and check if is on disk.
+func CheckFileExsit(file string) bool {
+	_, err := os.Lstat(file)
+	return !os.IsNotExist(err)
+}
+
+// CheckIsFile Get download info from bbolt and check if is on disk.
+func CheckIsFile(file string) bool {
+	fi, err := os.Lstat(file)
+	if err == nil && !fi.IsDir() {
+		return true
+	}
+	return false
 }
 
 // GetAllFile get all file under pathname and its sub directory
