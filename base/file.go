@@ -95,6 +95,34 @@ func GetAllFile(pathname string, s []string, ignoreZero bool) ([]string, error) 
 	return s, nil
 }
 
+// GetAllFileInDirectory get all file under pathname and its sub directory
+func GetAllFileInDirectory(pathname string, s, exts []string, includeEXTs, ignoreZero bool) ([]string, error) {
+	rd, err := ioutil.ReadDir(pathname)
+	if err != nil {
+		return s, err
+	}
+	for _, fi := range rd {
+		if fi.IsDir() {
+			fullDir := filepath.Join(pathname, fi.Name())
+			s, err = GetAllFileInDirectory(fullDir, s, exts, includeEXTs, ignoreZero)
+			if err != nil {
+				return s, err
+			}
+		} else {
+			if fi.Size() <= 0 && ignoreZero {
+				continue
+			}
+			fileName := fi.Name()
+			_, fileExt := GetFileNameExt(fileName)
+			if (includeEXTs && FindInStringSlice(exts, fileExt)) || (!includeEXTs && !FindInStringSlice(exts, fileExt)) || len(exts) == 0 {
+				fullName := filepath.Join(pathname, fileName)
+				s = append(s, fullName)
+			}
+		}
+	}
+	return s, nil
+}
+
 // GetFileNameExt get file name and ext from path
 func GetFileNameExt(f string) (string, string) {
 	dfPurName := filepath.Base(strings.TrimSpace(f))
