@@ -396,6 +396,10 @@ func GetSizeNameAndCheckRangeSupport(url string) (size int64, rangeSupport bool,
 	}
 	// fmt.Println(res.Header)
 	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		err = fmt.Errorf("%v", res.StatusCode)
+		return
+	}
 	header := res.Header
 	contentRangeHeader := header["Content-Range"]
 	if len(contentRangeHeader) > 0 {
