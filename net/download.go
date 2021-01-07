@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/spf13/cast"
 	"github.com/xurwxj/gtils/base"
 	"github.com/xurwxj/viper"
 )
@@ -28,7 +30,10 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRang
 			return "", err
 		}
 	}
-	tsize, rangeSupport, tfileName, _ := GetSizeNameAndCheckRangeSupport(turl)
+	tsize, rangeSupport, tfileName, err := GetSizeNameAndCheckRangeSupport(turl)
+	if statusCode := cast.ToInt64(err.Error()); statusCode > 0 {
+		return "", err
+	}
 	if size == 0 {
 		size = tsize
 	}
@@ -419,4 +424,29 @@ func GetSizeNameAndCheckRangeSupport(url string) (size int64, rangeSupport bool,
 		rangeSupport = true
 	}
 	return
+}
+
+func setHeader(req *http.Request, header map[string]string) *http.Request {
+	for k, h := range header {
+		req.Header.Set(k, h)
+	}
+	return req
+}
+
+// PrintLocalDial connects to addr on the network.
+// It returns the net.Conn and an error.
+func PrintLocalDial(network, addr string) (net.Conn, error) {
+	dial := net.Dialer{
+		Timeout:   3 * time.Minute,
+		KeepAlive: 3 * time.Minute,
+	}
+
+	conn, err := dial.Dial(network, addr)
+	if err != nil {
+		return conn, err
+	}
+
+	// fmt.Println("PrintLocalDial connect done, use", conn.LocalAddr().String())
+
+	return conn, err
 }
