@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -424,29 +423,4 @@ func GetSizeNameAndCheckRangeSupport(url string) (size int64, rangeSupport bool,
 		rangeSupport = true
 	}
 	return
-}
-
-func setHeader(req *http.Request, header map[string]string) *http.Request {
-	for k, h := range header {
-		req.Header.Set(k, h)
-	}
-	return req
-}
-
-// PrintLocalDial connects to addr on the network.
-// It returns the net.Conn and an error.
-func PrintLocalDial(network, addr string) (net.Conn, error) {
-	dial := net.Dialer{
-		Timeout:   3 * time.Minute,
-		KeepAlive: 3 * time.Minute,
-	}
-
-	conn, err := dial.Dial(network, addr)
-	if err != nil {
-		return conn, err
-	}
-
-	// fmt.Println("PrintLocalDial connect done, use", conn.LocalAddr().String())
-
-	return conn, err
 }
