@@ -68,14 +68,11 @@ func unzip(tFile, targetDir, targetCharset string) error {
 		for _, file := range zipReader.Reader.File {
 			fHeader := file.FileHeader
 			fname := []byte(file.Name)
-			fname, err = Decode([]byte(file.Name), "utf8")
-			if fHeader.NonUTF8 && err != nil {
-				// fmt.Println("file.Name: ", file.Name)
-				fname, err = Decode([]byte(file.Name), targetCharset)
-				// fmt.Println("file.Name decode: ", string(fname))
-				if err != nil {
-					return err
-				}
+			if fHeader.NonUTF8 {
+				fname, err = Decode(fname, targetCharset)
+			}
+			if err != nil || !fHeader.NonUTF8 {
+				fname, err = Decode(fname, "utf8")
 			}
 			if err != nil {
 				return err
