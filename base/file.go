@@ -1,7 +1,6 @@
 package base
 
 import (
-	"bufio"
 	"bytes"
 	"io"
 	"io/ioutil"
@@ -10,8 +9,6 @@ import (
 	"strings"
 
 	"github.com/gabriel-vasile/mimetype"
-	"golang.org/x/net/html/charset"
-	"golang.org/x/text/encoding"
 )
 
 // CheckFileExistBackInfo Get file info if is on disk.
@@ -184,30 +181,4 @@ func CheckFileIsBinaryByMimeType(m *mimetype.MIME) bool {
 		}
 	}
 	return isBinary
-}
-
-// DetermineEncodingFromFilePath get encoding from filepath
-func DetermineEncodingFromFilePath(f string) (e encoding.Encoding, name string, certain bool, err error) {
-	fc, err := os.Open(f)
-	if err != nil {
-		return
-	}
-	bytes, err := bufio.NewReader(fc).Peek(1024)
-	if err != nil {
-		return
-	}
-
-	e, name, certain = charset.DetermineEncoding(bytes, "")
-	return
-}
-
-// DetermineEncodingFromFileReader get encoding from filepath
-func DetermineEncodingFromFileReader(f io.Reader) (e encoding.Encoding, name string, certain bool, err error) {
-	bytes, err := bufio.NewReader(f).Peek(1024)
-	if err != nil {
-		return
-	}
-
-	e, name, certain = charset.DetermineEncoding(bytes, "")
-	return
 }
