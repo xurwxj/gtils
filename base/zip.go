@@ -2,6 +2,7 @@ package base
 
 import (
 	"archive/zip"
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/mholt/archiver/v3"
+	"golang.org/x/net/html/charset"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/encoding/japanese"
@@ -42,6 +44,7 @@ func Unzip(filename, d string) error {
 	return unzip(filename, d, "GBK")
 }
 
+// HasFilesInZip check file exist or not in spec exts
 func HasFilesInZip(filename string, exts []string) (bool, error) {
 	z := archiver.Zip{
 		MkdirAll:          true,
@@ -67,17 +70,23 @@ func unzip(tFile, targetDir, targetCharset string) error {
 	if zipReader != nil {
 		for _, file := range zipReader.Reader.File {
 			fHeader := file.FileHeader
-			fname := []byte(file.Name)
-			if fHeader.NonUTF8 {
-				fname, err = Decode(fname, targetCharset)
+
+			tname := DecodingFromString(file.Name)
+			if tname == "" {
+				if !fHeader.NonUTF8 {
+					fname, _ := Decode([]byte(file.Name), "utf8")
+					tname = string(fname)
+				} else {
+					fname, _ := Decode([]byte(file.Name), targetCharset)
+					tname = string(fname)
+				}
 			}
-			if err != nil || !fHeader.NonUTF8 {
-				fname, err = Decode(fname, "utf8")
+			// fmt.Println("tname IsUtf8: ", IsUtf8([]byte(tname)))
+			if !IsUtf8([]byte(tname)) {
+				fname, _ := Decode([]byte(file.Name), targetCharset)
+				tname = string(fname)
 			}
-			if err != nil {
-				return err
-			}
-			tname := string(fname)
+			// fmt.Println("tname: ", tname)
 
 			zippedFile, err := file.Open()
 			if err != nil {
@@ -160,15 +169,32 @@ var encodings = map[string]encoding.Encoding{
 	"utf16le":           unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
 }
 
+// GetEncoding get encoding by spec charset
 func GetEncoding(charset string) (encoding.Encoding, bool) {
 	charset = strings.ToLower(charset)
 	enc, ok := encodings[charset]
 	return enc, ok
 }
 
+// Decode decode string encode by spect
 func Decode(in []byte, charset string) ([]byte, error) {
 	if enc, ok := GetEncoding(charset); ok {
 		return enc.NewDecoder().Bytes(in)
 	}
-	return nil, errors.New("charset not found!")
+	return nil, errors.New("charsetNotFound")
+}
+
+// DetermineEncodingFromZipFile get encoding from filepath
+func DetermineEncodingFromZipFile(f *zip.File) (e encoding.Encoding, name string, certain bool, err error) {
+	fc, err := f.Open()
+	if err != nil {
+		return
+	}
+	bytes, err := bufio.NewReader(fc).Peek(1024)
+	if err != nil {
+		return
+	}
+
+	e, name, certain = charset.DetermineEncoding(bytes, "")
+	return
 }
