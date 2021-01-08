@@ -96,15 +96,19 @@ func GetAllFile(pathname string, s []string, ignoreZero bool) ([]string, error) 
 }
 
 // GetAllFileInDirectory get all file under pathname and its sub directory
-func GetAllFileInDirectory(pathname string, s, exts []string, includeEXTs, ignoreZero bool) ([]string, error) {
+func GetAllFileInDirectory(pathname string, s, exts, excludeDirs []string, includeEXTs, ignoreZero bool) ([]string, error) {
 	rd, err := ioutil.ReadDir(pathname)
 	if err != nil {
 		return s, err
 	}
 	for _, fi := range rd {
 		if fi.IsDir() {
-			fullDir := filepath.Join(pathname, fi.Name())
-			s, err = GetAllFileInDirectory(fullDir, s, exts, includeEXTs, ignoreZero)
+			dirName := fi.Name()
+			if checkContainDir(excludeDirs, dirName) {
+				continue
+			}
+			fullDir := filepath.Join(pathname, dirName)
+			s, err = GetAllFileInDirectory(fullDir, s, exts, excludeDirs, includeEXTs, ignoreZero)
 			if err != nil {
 				return s, err
 			}
@@ -121,6 +125,17 @@ func GetAllFileInDirectory(pathname string, s, exts []string, includeEXTs, ignor
 		}
 	}
 	return s, nil
+}
+
+func checkContainDir(excludeDirs []string, dirName string) bool {
+	if len(excludeDirs) > 0 {
+		for _, d := range excludeDirs {
+			if strings.Contains(dirName, d) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // GetFileNameExt get file name and ext from path
