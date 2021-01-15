@@ -4,9 +4,26 @@ import (
 	"fmt"
 
 	"github.com/xurwxj/gtils/base"
+	"github.com/xurwxj/gtils/net"
 )
 
 func main() {
+	td()
+}
+
+func td() {
+	s := FetchPLEForm{}
+	net.QueryParseToStruct([]byte("modelCode=einscan-s&serialEncryption=einscan-plus2LGMHJHGGJJFDCFGKLJCBGHNIKJFBKKGEEEBLMKDE"), &s)
+	fmt.Println(s)
+}
+
+// FetchPLEForm for plefetch form
+type FetchPLEForm struct {
+	ModelCode        string `db:"model_code" form:"modelCode" query:"modelCode" json:"modelCode" validate:"required"`
+	SerialEncryption string `db:"serial_encryption" form:"serialEncryption" query:"serialEncryption" json:"serialEncryption" validate:"required"`
+}
+
+func testUnzip() {
 	// InitLog()
 	// s := sys.GetOsInfo(Log)
 	// fmt.Println("s: ", s)

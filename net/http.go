@@ -3,6 +3,7 @@ package net
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -136,4 +137,16 @@ func GetCookieFromHeaderByte(headerByte []byte, key string) (string, error) {
 		}
 	}
 	return "", err
+}
+
+// QueryParseToStruct parse query or form body to struct
+func QueryParseToStruct(query []byte, out interface{}) error {
+
+	queryMap := QueryBytesToMap(query)
+	queryBytes, err := json.Marshal(queryMap)
+	// fmt.Println(string(queryBytes))
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(queryBytes, out)
 }
