@@ -26,6 +26,15 @@ func GetStringFromInterface(i interface{}) string {
 	return string(rs)
 }
 
+// StructToJSONString convert struct to json string by struct's json tag
+func StructToJSONString(item interface{}) (string, error) {
+	dataByte, err := json.Marshal(item)
+	if err == nil {
+		return "", err
+	}
+	return string(dataByte), nil
+}
+
 // StructToJSON convert struct to json by struct's json tag
 func StructToJSON(item interface{}) (interface{}, error) {
 	var rs interface{}
