@@ -30,8 +30,10 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRang
 		}
 	}
 	tsize, rangeSupport, tfileName, err := GetSizeNameAndCheckRangeSupport(turl)
-	if statusCode := cast.ToInt64(err.Error()); statusCode > 0 {
-		return "", err
+	if err != nil {
+		if statusCode := cast.ToInt64(err.Error()); statusCode > 0 {
+			return "", err
+		}
 	}
 	if size == 0 {
 		size = tsize
@@ -400,7 +402,7 @@ func GetSizeNameAndCheckRangeSupport(url string) (size int64, rangeSupport bool,
 	}
 	// fmt.Println(res.Header)
 	defer res.Body.Close()
-	if res.StatusCode != 200 {
+	if !base.FindInIntSlice([]int{200, 206}, res.StatusCode) {
 		err = fmt.Errorf("%v", res.StatusCode)
 		return
 	}
