@@ -29,7 +29,7 @@ func GetStringFromInterface(i interface{}) string {
 // StructToJSONString convert struct to json string by struct's json tag
 func StructToJSONString(item interface{}) (string, error) {
 	dataByte, err := json.Marshal(item)
-	if err == nil {
+	if err != nil {
 		return "", err
 	}
 	return string(dataByte), nil
