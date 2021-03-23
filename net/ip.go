@@ -1,8 +1,11 @@
 package net
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
+
+	"github.com/xurwxj/viper"
 )
 
 // CheckIPPublic check ip is not a private ip or multicast ip
@@ -100,4 +103,54 @@ func GetAvailableIP(ipv string) string {
 		}
 	}
 	return ip.String()
+}
+
+func GetVenuscnIPRS(ip string) (rs AliIP) {
+	venuscnURL := viper.GetString("ip.venuscn.url")
+	venuscnCode := viper.GetString("ip.venuscn.code")
+	if venuscnURL == "" || venuscnCode == "" {
+		return
+	}
+	url := fmt.Sprintf("%s%s", venuscnURL, ip)
+	resByte, _, err := Remote(url, "GET", nil, map[string]string{
+		"accept":        "application/json",
+		"content-type":  "application/json",
+		"Authorization": fmt.Sprintf("APPCODE %s", venuscnCode),
+	})
+	if err != nil {
+		return
+	}
+	var res ipDetail
+	err = json.Unmarshal(resByte, &res)
+	if err == nil && res.Code == 0 && res.Data.CityID != "lcoal" && res.Data.CountryID != "IANA" {
+		rs = res.Data
+	}
+	if err == nil && res.Code == 0 && (res.Data.CityID == "lcoal" || res.Data.CountryID == "IANA") {
+		res.Data.CountryID = "local"
+		res.Data.Country = "local"
+		rs = res.Data
+	}
+	return
+}
+
+type ipDetail struct {
+	Code int   `json:"code"`
+	Data AliIP `json:"data"`
+}
+
+// AliIP ali ip parse
+type AliIP struct {
+	IP        string `json:"ip"`
+	Country   string `json:"country"`
+	Area      string `json:"area"`
+	Region    string `json:"region"`
+	City      string `json:"city"`
+	County    string `json:"county"`
+	ISP       string `json:"isp"`
+	CountryID string `json:"country_id"`
+	AreaID    string `json:"area_id"`
+	RegionID  string `json:"region_id"`
+	CityID    string `json:"city_id"`
+	CountyID  string `json:"county_id"`
+	ISPID     string `json:"isp_id"`
 }
