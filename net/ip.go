@@ -105,6 +105,7 @@ func GetAvailableIP(ipv string) string {
 	return ip.String()
 }
 
+// GetVenuscnIPRS get ip info from venus api
 func GetVenuscnIPRS(ip string) (rs AliIP) {
 	venuscnURL := viper.GetString("ip.venuscn.url")
 	venuscnCode := viper.GetString("ip.venuscn.code")
