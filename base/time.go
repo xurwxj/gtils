@@ -35,6 +35,43 @@ func TimeEncode(t time.Time) []byte {
 	return buf
 }
 
+// CronExpired check cron expired or not
+func CronExpired(cronOn string) bool {
+	cronOnArr := strings.Split(cronOn, " ")
+	if len(cronOnArr) != 4 {
+		return true
+	}
+	for k, v := range cronOnArr {
+		v = strings.TrimSpace(v)
+		if k == 3 {
+			if vs0, vs0Err := strconv.ParseInt(v, 10, 64); vs0Err == nil && int(vs0) < time.Now().UTC().Year() {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// HasWildMatch check cron has duplicate str
+func HasWildMatch(cronOn string) bool {
+	cronOnArr := strings.Split(cronOn, " ")
+	if len(cronOnArr) != 4 {
+		return false
+	}
+	for k, v := range cronOnArr {
+		v = strings.TrimSpace(v)
+		if k == 3 {
+			if vs0, vs0Err := strconv.ParseInt(v, 10, 64); vs0Err == nil && int(vs0) < time.Now().UTC().Year() {
+				return false
+			}
+		}
+		if strings.Count(v, ",") > 0 || strings.Count(v, "*") > 0 || strings.Count(v, "-") > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 // CronTriggerAble check cronOn is triggerable
 // must be following format:
 //             <ul>
