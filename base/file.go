@@ -71,6 +71,27 @@ func CheckIsFile(file string) bool {
 	return false
 }
 
+// GetAllDirectoryName get all directory name under pathname and its sub directory
+func GetAllDirectoryName(pathname string, s []string, recursion bool) ([]string, error) {
+	rd, err := ioutil.ReadDir(pathname)
+	if err != nil {
+		return s, err
+	}
+	for _, fi := range rd {
+		if fi.IsDir() {
+			s = append(s, fi.Name())
+			if recursion {
+				fullDir := filepath.Join(pathname, fi.Name())
+				s, err = GetAllFile(fullDir, s, recursion)
+				if err != nil {
+					return s, err
+				}
+			}
+		}
+	}
+	return s, nil
+}
+
 // GetAllFile get all file under pathname and its sub directory
 func GetAllFile(pathname string, s []string, ignoreZero bool) ([]string, error) {
 	rd, err := ioutil.ReadDir(pathname)
