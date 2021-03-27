@@ -24,6 +24,16 @@ func CheckFileExistBackInfo(file string, ignoreZero bool) os.FileInfo {
 	return nil
 }
 
+// GetFileOrDirectoryInfo Get file  or directory info if is on disk.
+func GetFileOrDirectoryInfo(targetPath string) os.FileInfo {
+	// fi, err := os.Stat(file)
+	fi, err := os.Lstat(targetPath)
+	if !os.IsNotExist(err) {
+		return fi
+	}
+	return nil
+}
+
 // WriteFile writes data to a file named by name under path.
 // WrtieFile creates the path and file if not exist, truncating the file if already exists.
 func WriteFile(path, name string, data []byte) error {
