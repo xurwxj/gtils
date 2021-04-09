@@ -154,6 +154,22 @@ func (m *MqttManager) Subscribe(topic string, qos byte, callback func(mqtt.Clien
 	return nil
 }
 
+// SubscribeQeue mqtt Subscribe func wrapper
+func (m *MqttManager) SubscribeQeue(topic string, qos byte, callback func(msgBody []byte)) error {
+	if m == nil || m.Client == nil {
+		err := fmt.Errorf("disconnectedErr")
+		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt subscribe error, m nil")
+		return err
+	}
+	if token := m.Client.Subscribe(topic, qos, func(c mqtt.Client, msg mqtt.Message) {
+		callback(msg.Payload())
+	}); token.Wait() && token.Error() != nil {
+		m.Conf.Log.Err(token.Error()).Str("topic", topic).Msg("mqtt subscribe error")
+		return token.Error()
+	}
+	return nil
+}
+
 // UnSubscribe mqtt Subscribe func wrapper
 func (m *MqttManager) UnSubscribe(topic string) error {
 	if m == nil || m.Client == nil {
