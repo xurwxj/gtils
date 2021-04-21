@@ -63,10 +63,10 @@ func unzip(tFile, targetDir, targetCharset string) error {
 
 			tname := file.Name
 			if fHeader.NonUTF8 {
-				if HasGBK(tFile) {
-					tname = DecodingGBKString(tname)
-				} else if HasJP(tFile) {
+				if HasJP(tFile) {
 					tname = DecodingJPString(tname)
+				} else if HasGBK(tFile) {
+					tname = DecodingGBKString(tname)
 				} else {
 					tname = DecodingFromString(tname)
 				}
