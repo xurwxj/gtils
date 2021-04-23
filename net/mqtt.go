@@ -3,6 +3,7 @@ package net
 import (
 	"encoding/json"
 	"fmt"
+	"runtime"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -108,6 +109,7 @@ func GetManager(config *Config) (*MqttManager, error) {
 
 // Publish mqtt publish func wrapper
 func (m *MqttManager) Publish(topic string, qos byte, payload interface{}) error {
+	defer panicDefer()
 	buf, err := json.Marshal(payload)
 
 	if err != nil {
@@ -130,6 +132,16 @@ func (m *MqttManager) Publish(topic string, qos byte, payload interface{}) error
 		return fmt.Errorf("publishErr")
 	}
 	return nil
+}
+
+func panicDefer() {
+	err := recover()
+	if err != nil {
+		const size = 64 << 10
+		buf := make([]byte, size)
+		buf = buf[:runtime.Stack(buf, false)]
+		fmt.Printf("panic: %v\n%s", err, buf)
+	}
 }
 
 // RetainPublish mqtt publish with retain func wrapper
