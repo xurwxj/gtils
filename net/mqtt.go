@@ -86,7 +86,13 @@ func GetManager(config *Config) (*MqttManager, error) {
 		}
 		c = mqtt.NewClient(opts)
 		// fmt.Println(opts.Servers)
-		if token := c.Connect(); token.Wait() && token.Error() != nil {
+		token := c.Connect()
+		if token == nil {
+			err := fmt.Errorf("tokenNil")
+			config.Log.Err(err).Interface("config", config).Msg("mqtt connect token error")
+			return nil, err
+		}
+		if token.Wait() && token.Error() != nil {
 			config.Log.Err(token.Error()).Interface("config", config).Msg("mqtt connect token error")
 			return nil, token.Error()
 		}
@@ -113,7 +119,13 @@ func (m *MqttManager) Publish(topic string, qos byte, payload interface{}) error
 		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt publish marshal error, m nil")
 		return err
 	}
-	if token := m.Client.Publish(topic, qos, false, buf); token.Wait() && token.Error() != nil {
+	token := m.Client.Publish(topic, qos, false, buf)
+	if token == nil {
+		err := fmt.Errorf("tokenNil")
+		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt publish error")
+		return err
+	}
+	if token.Wait() && token.Error() != nil {
 		m.Conf.Log.Err(token.Error()).Str("topic", topic).Msg("mqtt publish error")
 		return fmt.Errorf("publishErr")
 	}
@@ -133,7 +145,13 @@ func (m *MqttManager) RetainPublish(topic string, qos byte, payload interface{})
 		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt RetainPublish marshal error, m nil")
 		return err
 	}
-	if token := m.Client.Publish(topic, qos, true, buf); token.Wait() && token.Error() != nil {
+	token := m.Client.Publish(topic, qos, true, buf)
+	if token == nil {
+		err := fmt.Errorf("tokenNil")
+		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt RetainPublish error")
+		return err
+	}
+	if token.Wait() && token.Error() != nil {
 		m.Conf.Log.Err(token.Error()).Str("topic", topic).Msg("mqtt RetainPublish error")
 		return fmt.Errorf("publishErr")
 	}
@@ -147,7 +165,13 @@ func (m *MqttManager) Subscribe(topic string, qos byte, callback func(mqtt.Clien
 		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt subscribe error, m nil")
 		return err
 	}
-	if token := m.Client.Subscribe(topic, qos, callback); token.Wait() && token.Error() != nil {
+	token := m.Client.Subscribe(topic, qos, callback)
+	if token == nil {
+		err := fmt.Errorf("tokenNil")
+		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt subscribe error")
+		return err
+	}
+	if token.Wait() && token.Error() != nil {
 		m.Conf.Log.Err(token.Error()).Str("topic", topic).Msg("mqtt subscribe error")
 		return token.Error()
 	}
@@ -161,9 +185,15 @@ func (m *MqttManager) SubscribeQeue(topic string, qos byte, callback func(msgBod
 		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt subscribe error, m nil")
 		return err
 	}
-	if token := m.Client.Subscribe(topic, qos, func(c mqtt.Client, msg mqtt.Message) {
+	token := m.Client.Subscribe(topic, qos, func(c mqtt.Client, msg mqtt.Message) {
 		callback(msg.Payload())
-	}); token.Wait() && token.Error() != nil {
+	})
+	if token == nil {
+		err := fmt.Errorf("tokenNil")
+		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt subscribe error")
+		return err
+	}
+	if token.Wait() && token.Error() != nil {
 		m.Conf.Log.Err(token.Error()).Str("topic", topic).Msg("mqtt subscribe error")
 		return token.Error()
 	}
@@ -177,7 +207,13 @@ func (m *MqttManager) UnSubscribe(topic string) error {
 		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt UnSubscribe error, m nil")
 		return err
 	}
-	if token := m.Client.Unsubscribe(topic); token.Wait() && token.Error() != nil {
+	token := m.Client.Unsubscribe(topic)
+	if token == nil {
+		err := fmt.Errorf("tokenNil")
+		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt Unsubscribe error")
+		return err
+	}
+	if token.Wait() && token.Error() != nil {
 		m.Conf.Log.Err(token.Error()).Str("topic", topic).Msg("mqtt Unsubscribe error")
 		return token.Error()
 	}
