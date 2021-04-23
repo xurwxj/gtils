@@ -108,15 +108,15 @@ func GetManager(config *Config) (*MqttManager, error) {
 
 // Publish mqtt publish func wrapper
 func (m *MqttManager) Publish(topic string, qos byte, payload interface{}) error {
-	if m == nil || m.Client == nil {
-		err := fmt.Errorf("disconnectedErr")
-		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt publish error, m nil")
-		return err
-	}
 	buf, err := json.Marshal(payload)
 
 	if err != nil {
 		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt publish marshal error, m nil")
+		return err
+	}
+	if m == nil || (m != nil && m.Client == nil) {
+		err := fmt.Errorf("disconnectedErr")
+		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt publish error, m nil")
 		return err
 	}
 	token := m.Client.Publish(topic, qos, false, buf)
@@ -134,15 +134,15 @@ func (m *MqttManager) Publish(topic string, qos byte, payload interface{}) error
 
 // RetainPublish mqtt publish with retain func wrapper
 func (m *MqttManager) RetainPublish(topic string, qos byte, payload interface{}) error {
-	if m == nil || m.Client == nil {
-		err := fmt.Errorf("disconnectedErr")
-		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt RetainPublish error, m nil")
-		return err
-	}
 	buf, err := json.Marshal(payload)
 
 	if err != nil {
 		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt RetainPublish marshal error, m nil")
+		return err
+	}
+	if m == nil || (m != nil && m.Client == nil) {
+		err := fmt.Errorf("disconnectedErr")
+		m.Conf.Log.Err(err).Str("topic", topic).Msg("mqtt RetainPublish error, m nil")
 		return err
 	}
 	token := m.Client.Publish(topic, qos, true, buf)
