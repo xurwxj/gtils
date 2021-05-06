@@ -39,7 +39,7 @@ func testUnzip() {
 	// fmt.Println("0.3.4.8.09: ", err)
 
 	f := "../../../git.shining3d.com/cloud/algorithm/tmp/ŠpičákováVěra_2021-01-06_022.zip"
-	base.Unzip(f, fmt.Sprintf("../../../git.shining3d.com/cloud/algorithm/tmp/mesh/%s", base.Md5String(f)))
+	base.Unzip(f, fmt.Sprintf("../../../git.shining3d.com/cloud/algorithm/tmp/mesh/%s", base.Md5String(f)), "")
 	f = "../../../git.shining3d.com/cloud/algorithm/tmp/2021-01-08_003_111_谭彩红.zip"
-	base.Unzip(f, fmt.Sprintf("../../../git.shining3d.com/cloud/algorithm/tmp/mesh/%s", base.Md5String(f)))
+	base.Unzip(f, fmt.Sprintf("../../../git.shining3d.com/cloud/algorithm/tmp/mesh/%s", base.Md5String(f)), "")
 }
