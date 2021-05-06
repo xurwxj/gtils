@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strings"
 	"unsafe"
+
+	"github.com/spf13/cast"
 )
 
 // GetByteArrayFromInterface get byte array from interface
@@ -133,4 +136,15 @@ func Bytes2String(b []byte) string {
 func Round(val float64, precision int) float64 {
 	p := math.Pow10(precision)
 	return math.Floor(val*p+0.5) / p
+}
+
+// ByteSliceStringToByteSlice 把字节数组的字符串转换成标准的字节数组
+func ByteSliceStringToByteSlice(s string) (rs []byte) {
+	s = strings.TrimPrefix(s, "[")
+	s = strings.TrimSuffix(s, "]")
+	g := strings.Split(s, " ")
+	for _, gv := range g {
+		rs = append(rs, byte(cast.ToInt64(gv)))
+	}
+	return
 }
