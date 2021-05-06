@@ -3,6 +3,7 @@ package base
 import (
 	"math/rand"
 	"reflect"
+	"regexp"
 	"time"
 	"unicode"
 
@@ -149,6 +150,28 @@ func HasJP(data string) bool {
 func HasGBK(data string) bool {
 	for _, v := range data {
 		if unicode.Is(unicode.Han, v) {
+			return true
+		}
+	}
+	return false
+}
+
+// HasGBKReg check string contain gbk
+func HasGBKReg(data string) bool {
+	var reg = regexp.MustCompile("[\u4e00-\u9fa5]$")
+	for _, v := range data {
+		if reg.MatchString(string(v)) {
+			return true
+		}
+	}
+	return false
+}
+
+// HasJPReg check string contain japanese
+func HasJPReg(data string) bool {
+	var reg = regexp.MustCompile("[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\u2605-\u2606\u2190-\u2195\u203B]|[一-龠]|[ぁ-ん]|[ァ-ヴー]")
+	for _, v := range data {
+		if reg.MatchString(string(v)) {
 			return true
 		}
 	}

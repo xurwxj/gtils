@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/mholt/archiver/v3"
 )
@@ -24,14 +25,14 @@ func Zip(d []string, filename string) error {
 
 // Unzip unzip file according by ext
 // d zip file path
-func Unzip(filename, d string) error {
+func Unzip(filename, d, targetCharset string) error {
 	// z := archiver.Zip{
 	// 	MkdirAll:               true,
 	// 	OverwriteExisting:      true,
 	// 	ImplicitTopLevelFolder: false,
 	// }
 	// return z.Unarchive(filename, d)
-	return unzip(filename, d, "GBK")
+	return unzip(filename, d, targetCharset)
 }
 
 // HasFilesInZip check file exist or not in spec exts
@@ -58,17 +59,26 @@ func unzip(tFile, targetDir, targetCharset string) error {
 		return err
 	}
 	if zipReader != nil {
+		targetCharset = strings.TrimSpace(strings.ToLower(targetCharset))
 		for _, file := range zipReader.Reader.File {
 			fHeader := file.FileHeader
 
 			tname := file.Name
-			if fHeader.NonUTF8 {
-				if HasJP(tFile) {
+			validUTF8, requireUTF8 := detectUTF8(tname)
+			if fHeader.NonUTF8 && (!validUTF8 || !requireUTF8) {
+				switch targetCharset {
+				case "ja", "ja-jp":
 					tname = DecodingJPString(tname)
-				} else if HasGBK(tFile) {
+				case "zh", "cn", "zh-cn":
 					tname = DecodingGBKString(tname)
-				} else {
-					tname = DecodingFromString(tname)
+				default:
+					if HasJP(tFile) || HasJPReg(tFile) {
+						tname = DecodingJPString(tname)
+					} else if HasGBK(tFile) {
+						tname = DecodingGBKString(tname)
+					} else {
+						tname = DecodingFromString(tname)
+					}
 				}
 			}
 
@@ -110,4 +120,27 @@ func unzip(tFile, targetDir, targetCharset string) error {
 		return fmt.Errorf("not a valid zip file for %s", tFile)
 	}
 	return nil
+}
+
+// detectUTF8 reports whether s is a valid UTF-8 string, and whether the string
+// must be considered UTF-8 encoding (i.e., not compatible with CP-437, ASCII,
+// or any other common encoding).
+func detectUTF8(s string) (valid, require bool) {
+	for i := 0; i < len(s); {
+		r, size := utf8.DecodeRuneInString(s[i:])
+		i += size
+		// Officially, ZIP uses CP-437, but many readers use the system's
+		// local character encoding. Most encoding are compatible with a large
+		// subset of CP-437, which itself is ASCII-like.
+		//
+		// Forbid 0x7e and 0x5c since EUC-KR and Shift-JIS replace those
+		// characters with localized currency and overline characters.
+		if r < 0x20 || r > 0x7d || r == 0x5c {
+			if !utf8.ValidRune(r) || (r == utf8.RuneError && size == 1) {
+				return false, false
+			}
+			require = true
+		}
+	}
+	return true, require
 }
