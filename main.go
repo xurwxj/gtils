@@ -3,12 +3,30 @@ package main
 import (
 	"fmt"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/xurwxj/gtils/base"
 	"github.com/xurwxj/gtils/net"
+	"github.com/xurwxj/gtils/validators"
 )
 
 func main() {
-	td()
+	vs()
+}
+
+func vs() {
+	v := validator.New()
+	d := []factoryMemberForm{
+		{FactoryID: "888", Username: "999", IsAdmin: false},
+		{FactoryID: "rrr", Username: "ttt", IsAdmin: true},
+	}
+	fmt.Println(validators.ValidStruct(v, d))
+	fmt.Println("s: ", validators.ValidStruct(v, d[0]))
+}
+
+type factoryMemberForm struct {
+	FactoryID string `form:"factoryID" json:"factoryID" validate:"required"`
+	Username  string `form:"username" json:"username" validate:"required"`
+	IsAdmin   bool   `form:"isAdmin" json:"isAdmin"`
 }
 
 func td() {

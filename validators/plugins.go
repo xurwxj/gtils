@@ -11,32 +11,45 @@ import (
 )
 
 // ValidStruct return json string error
-func ValidStruct(Validate *validator.Validate, u interface{}) string {
-	err := Validate.Struct(u)
-	if err != nil {
-		rs := make(map[string]string)
-		su := structs.New(u)
-		for _, verr := range err.(validator.ValidationErrors) {
-			// tParam := verr.Param()
-			// fmt.Println("verr.Field(): ", verr.Field())
-			ff, ok := su.FieldOk(verr.Field())
-			if ok {
-				// fmt.Println("su.Field(verr.Field()): ", ff)
-				// fmt.Println("su.Field(verr.Field()).Tag(\"json\"): ", ff.Tag("json"))
-				rs[ff.Tag("json")] = verr.Tag()
-			} else {
-				// fmt.Println("verr StructField: ", verr.StructField())
-				// fmt.Println("verr.Tag(): ", verr.Tag())
-				rs[verr.Field()] = verr.Tag()
+func ValidStruct(Validate *validator.Validate, tu interface{}) string {
+	targets := []interface{}{}
+	s := reflect.ValueOf(tu)
+	if s.Kind() == reflect.Slice || s.Kind() == reflect.Array {
+		for i := 0; i < s.Len(); i++ {
+			targets = append(targets, s.Index(i).Interface())
+		}
+	} else {
+		targets = append(targets, tu)
+	}
+	// fmt.Println(targets)
+
+	rs := make(map[string]string)
+	for _, u := range targets {
+		err := Validate.Struct(u)
+		if err != nil {
+			su := structs.New(u)
+			for _, verr := range err.(validator.ValidationErrors) {
+				// tParam := verr.Param()
+				// fmt.Println("verr.Field(): ", verr.Field())
+				ff, ok := su.FieldOk(verr.Field())
+				if ok {
+					// fmt.Println("su.Field(verr.Field()): ", ff)
+					// fmt.Println("su.Field(verr.Field()).Tag(\"json\"): ", ff.Tag("json"))
+					rs[ff.Tag("json")] = verr.Tag()
+				} else {
+					// fmt.Println("verr StructField: ", verr.StructField())
+					// fmt.Println("verr.Tag(): ", verr.Tag())
+					rs[verr.Field()] = verr.Tag()
+				}
 			}
 		}
-		if len(rs) > 0 {
-			rsByte, err := json.Marshal(rs)
-			if err == nil {
-				return string(rsByte)
-			} else {
-				return "unknownErr"
-			}
+	}
+	if len(rs) > 0 {
+		rsByte, err := json.Marshal(rs)
+		if err == nil {
+			return string(rsByte)
+		} else {
+			return "unknownErr"
 		}
 	}
 	return ""
