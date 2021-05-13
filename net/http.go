@@ -7,13 +7,16 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
+	stdUrl "net/url"
 	"strings"
 	"time"
 
 	validator "github.com/go-playground/validator/v10"
 	"github.com/xurwxj/gtils/validators"
+	"github.com/xurwxj/viper"
 	"gopkg.in/h2non/gentleman.v2"
 	"gopkg.in/h2non/gentleman.v2/plugins/body"
 )
@@ -54,9 +57,21 @@ func Remote(url, method string, body io.Reader, header map[string]string) ([]byt
 	var req *http.Request
 	var res *http.Response
 	var err error
+
+	proxyHandler := http.ProxyFromEnvironment
+	if proxyUrl := viper.GetString("HTTP_PROXY"); proxyUrl != "" {
+		proxyUri, err := stdUrl.Parse(proxyUrl)
+		if err != nil {
+			log.Println(err)
+		} else {
+			proxyHandler = http.ProxyURL(proxyUri)
+		}
+	}
+
 	client := &http.Client{Transport: &http.Transport{
 		Dial:              PrintLocalDial,
 		DisableKeepAlives: true,
+		Proxy:             proxyHandler,
 	}}
 	req, err = http.NewRequest(method, url, body)
 
