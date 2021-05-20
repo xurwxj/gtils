@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
-	github.com/eclipse/paho.mqtt.golang v1.3.2
+	github.com/eclipse/paho.mqtt.golang v1.3.4
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/fatih/structs v1.1.0
 	github.com/gabriel-vasile/mimetype v1.2.0
@@ -26,8 +26,8 @@ require (
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/xurwxj/gopsutil v0.0.0-20201022031607-51ca59cb5339
 	github.com/xurwxj/viper v1.7.1
-	golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4
-	golang.org/x/text v0.3.5
+	golang.org/x/net v0.0.0-20210510120150-4163338589ed
+	golang.org/x/text v0.3.6
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/h2non/gentleman.v2 v2.0.5
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
