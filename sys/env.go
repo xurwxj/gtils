@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -185,6 +186,9 @@ func CheckOsExtInfo(OssE OSSoftExtObj, Log *zerolog.Logger) OSSoftExtObj {
 		OssE.Resolution = "unknown"
 	}
 	if OssE.Lang == "" {
+		OssE.Lang, _ = GetLocale()
+	}
+	if OssE.Lang == "" {
 		userLanguage, err := jibber_jabber.DetectLanguage()
 		if err != nil {
 			Log.Err(err).Interface("OssE", OssE).Msg("CheckOsExtInfo DetectLanguage")
@@ -195,4 +199,46 @@ func CheckOsExtInfo(OssE OSSoftExtObj, Log *zerolog.Logger) OSSoftExtObj {
 		OssE.Lang = "unknown"
 	}
 	return OssE
+}
+
+// GetLocale get lang and locale from sys
+func GetLocale() (string, string) {
+	osHost := runtime.GOOS
+	defaultLang := "en"
+	defaultLoc := "US"
+	switch osHost {
+	case "windows":
+		// Exec powershell Get-Culture on Windows.
+		cmd := exec.Command("powershell", "Get-Culture | select -exp Name")
+		output, err := cmd.Output()
+		if err == nil {
+			langLocRaw := strings.TrimSpace(string(output))
+			langLoc := strings.Split(langLocRaw, "-")
+			lang := langLoc[0]
+			loc := langLoc[1]
+			return lang, loc
+		}
+	case "darwin":
+		// Exec powershell Get-Culture on Windows.
+		cmd := exec.Command("sh", "osascript -e 'user locale of (get system info)'")
+		output, err := cmd.Output()
+		if err == nil {
+			langLocRaw := strings.TrimSpace(string(output))
+			langLoc := strings.Split(langLocRaw, "_")
+			lang := langLoc[0]
+			loc := langLoc[1]
+			return lang, loc
+		}
+	case "linux":
+		envlang, ok := os.LookupEnv("LANG")
+		if ok {
+			langLocRaw := strings.TrimSpace(envlang)
+			langLocRaw = strings.Split(envlang, ".")[0]
+			langLoc := strings.Split(langLocRaw, "_")
+			lang := langLoc[0]
+			loc := langLoc[1]
+			return lang, loc
+		}
+	}
+	return defaultLang, defaultLoc
 }
