@@ -190,3 +190,12 @@ func KeepRegexCharacter(str, regexStr string) (rs string, err error) {
 	rs = reg.ReplaceAllString(str, "")
 	return
 }
+
+// KeepRegexCharacter keep all character matched in regex
+func SubStringByLen(str string, t int) (rs string) {
+	if str == "" {
+		return
+	}
+	rs = str[:t]
+	return
+}

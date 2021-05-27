@@ -10,7 +10,12 @@ import (
 )
 
 func main() {
-	dt()
+	dgt()
+}
+
+func dgt() {
+	s := base.SubStringByLen("ex v1.2.3 data", 5)
+	fmt.Println(s)
 }
 
 func dt() {
