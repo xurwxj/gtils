@@ -177,3 +177,16 @@ func HasJPReg(data string) bool {
 	}
 	return false
 }
+
+// KeepRegexCharacter keep all character matched in regex
+func KeepRegexCharacter(str, regexStr string) (rs string, err error) {
+	if str == "" {
+		return
+	}
+	reg, err := regexp.Compile(regexStr)
+	if err != nil {
+		return
+	}
+	rs = reg.ReplaceAllString(str, "")
+	return
+}

@@ -10,7 +10,13 @@ import (
 )
 
 func main() {
-	vs()
+	dt()
+}
+
+func dt() {
+	s, r := base.KeepRegexCharacter("ex v1.2.3 data", "[a-zA-Z]")
+	fmt.Println(s)
+	fmt.Println(r)
 }
 
 func vs() {
