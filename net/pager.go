@@ -58,6 +58,8 @@ func QueryBytesToMap(query []byte) map[string]string {
 				v := strings.TrimSpace(zs[1])
 				k, _ = url.QueryUnescape(k)
 				v, _ = url.QueryUnescape(v)
+				k = strings.TrimSpace(k)
+				v = strings.TrimSpace(v)
 				if k != "" && v != "" {
 					m[k] = v
 				}
