@@ -9,7 +9,9 @@ import (
 
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/encoding/korean"
 	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/encoding/traditionalchinese"
 )
 
 // SpecStringRandSeq get specific seq
@@ -114,10 +116,36 @@ func DecodingFromString(f string) string {
 	return ""
 }
 
+// DecodingKoreanString get encoding from filepath
+func DecodingKoreanString(f string) string {
+
+	es := korean.All
+	for _, e := range es {
+		rs, err := e.NewDecoder().String(f)
+		if err == nil {
+			return rs
+		}
+	}
+	return ""
+}
+
 // DecodingGBKString get encoding from filepath
 func DecodingGBKString(f string) string {
 
-	e := simplifiedchinese.GBK
+	es := simplifiedchinese.All
+	for _, e := range es {
+		rs, err := e.NewDecoder().String(f)
+		if err == nil {
+			return rs
+		}
+	}
+	return ""
+}
+
+// DecodingBIG5String get encoding from filepath
+func DecodingBIG5String(f string) string {
+
+	e := traditionalchinese.Big5
 	rs, err := e.NewDecoder().String(f)
 	if err == nil {
 		return rs
@@ -128,10 +156,12 @@ func DecodingGBKString(f string) string {
 // DecodingJPString get encoding from filepath
 func DecodingJPString(f string) string {
 
-	e := japanese.ShiftJIS
-	rs, err := e.NewDecoder().String(f)
-	if err == nil {
-		return rs
+	es := japanese.All
+	for _, e := range es {
+		rs, err := e.NewDecoder().String(f)
+		if err == nil {
+			return rs
+		}
 	}
 	return ""
 }

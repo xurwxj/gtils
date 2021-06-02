@@ -67,16 +67,26 @@ func unzip(tFile, targetDir, targetCharset string) error {
 			validUTF8, requireUTF8 := detectUTF8(tname)
 			if fHeader.NonUTF8 && (!validUTF8 || !requireUTF8) {
 				switch targetCharset {
-				case "ja", "ja-jp":
+				case "932", "ja", "ja-jp", "ja_jp", "50220", "50221", "50222", "50932", "51932":
 					tname = DecodingJPString(tname)
-				case "zh", "cn", "zh-cn":
+				case "936", "zh", "cn", "zh-cn", "zh_cn", "zh-chs", "zh_chs", "52936":
 					tname = DecodingGBKString(tname)
+				case "51949", "ko", "ko-kr", "ko_kr", "50225", "949":
+					tname = DecodingKoreanString(tname)
+				case "950", "zh-hk", "zh_hk", "zh-mo", "zh_mo", "zh-sg", "zh_sg", "zh-tw", "zh_tw", "zh-cht", "zh_cht":
+					tname = DecodingBIG5String(tname)
 				default:
-					if HasJP(tFile) || HasJPReg(tFile) {
-						tname = DecodingJPString(tname)
-					} else if HasGBK(tFile) {
+					tname = DecodingJPString(tname)
+					if tname == "" {
 						tname = DecodingGBKString(tname)
-					} else {
+					}
+					if tname == "" {
+						tname = DecodingBIG5String(tname)
+					}
+					if tname == "" {
+						tname = DecodingKoreanString(tname)
+					}
+					if tname == "" {
 						tname = DecodingFromString(tname)
 					}
 				}
