@@ -64,8 +64,9 @@ func unzip(tFile, targetDir, targetCharset string) error {
 			fHeader := file.FileHeader
 
 			tname := file.Name
-			validUTF8, requireUTF8 := detectUTF8(tname)
-			if fHeader.NonUTF8 && (!validUTF8 || !requireUTF8) {
+			// validUTF8, requireUTF8 := detectUTF8(tname)
+			// if fHeader.NonUTF8 && (!validUTF8 || !requireUTF8) {
+			if fHeader.NonUTF8 {
 				switch targetCharset {
 				case "932", "ja", "ja-jp", "ja_jp", "50220", "50221", "50222", "50932", "51932":
 					tname = DecodingJPString(tname)
