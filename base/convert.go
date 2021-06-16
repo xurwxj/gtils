@@ -114,11 +114,19 @@ func StructToJSONTagtringMap(item interface{}) (res map[string]string) {
 			field := reflectValue.Field(i).String()
 			if v.Field(i).Type.Kind() == reflect.String {
 				res[tag] = field
+			} else if v.Field(i).Type.Kind() == reflect.Struct {
+				for t, tv := range StructToJSONTagtringMap(reflectValue.Field(i).Interface()) {
+					res[t] = tv
+				}
 			} else {
-				res = nil
+				continue
 			}
 		} else {
-			res = nil
+			if v.Field(i).Type.Kind() == reflect.Struct {
+				for t, tv := range StructToJSONTagtringMap(reflectValue.Field(i).Interface()) {
+					res[t] = tv
+				}
+			}
 		}
 	}
 	return
