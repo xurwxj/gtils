@@ -59,10 +59,9 @@ func StructSliceToJSONTagMap(items interface{}) ([]interface{}, error) {
 }
 
 // StructToJSONTagMap convert struct to map by struct's json tag
-func StructToJSONTagMap(item interface{}) map[string]interface{} {
-	res := map[string]interface{}{}
+func StructToJSONTagMap(item interface{}) (res map[string]interface{}) {
 	if item == nil {
-		return res
+		return
 	}
 	v := reflect.TypeOf(item)
 	reflectValue := reflect.ValueOf(item)
@@ -70,6 +69,9 @@ func StructToJSONTagMap(item interface{}) map[string]interface{} {
 
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
+	}
+	if res == nil {
+		res = make(map[string]interface{})
 	}
 	for i := 0; i < v.NumField(); i++ {
 		tag := v.Field(i).Tag.Get("json")
@@ -88,7 +90,38 @@ func StructToJSONTagMap(item interface{}) map[string]interface{} {
 			}
 		}
 	}
-	return res
+	return
+}
+
+// StructToJSONTagtringMap convert struct to string map by struct's json tag
+func StructToJSONTagtringMap(item interface{}) (res map[string]string) {
+	if item == nil {
+		return
+	}
+	v := reflect.TypeOf(item)
+	reflectValue := reflect.ValueOf(item)
+	reflectValue = reflect.Indirect(reflectValue)
+
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	if res == nil {
+		res = make(map[string]string)
+	}
+	for i := 0; i < v.NumField(); i++ {
+		tag := v.Field(i).Tag.Get("json")
+		if tag != "" && tag != "-" {
+			field := reflectValue.Field(i).String()
+			if v.Field(i).Type.Kind() == reflect.String {
+				res[tag] = field
+			} else {
+				res = nil
+			}
+		} else {
+			res = nil
+		}
+	}
+	return
 }
 
 // StructToFormMap decodes an object into a map,
