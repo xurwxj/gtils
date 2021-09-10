@@ -53,8 +53,21 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRang
 	if workerCount < 1 {
 		workerCount = 10
 	}
-	partialSize := size / workerCount
-	wc := size / chunkSize
+
+	filePath := filepath.Join(savePath, fileName)
+	fi := base.CheckFileExistBackInfo(filePath, true)
+	if fi != nil && fi.Size() == size {
+		return fileName, nil
+	}
+	var needDownSize int64
+	if fi == nil{
+		needDownSize = size
+	}else {
+		needDownSize=size - fi.Size()
+	}
+
+	partialSize := needDownSize / workerCount
+	wc := needDownSize / chunkSize
 	if wc < workerCount {
 		workerCount = wc
 		if workerCount == 0 {
@@ -67,18 +80,17 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRang
 	// fmt.Println("88 chunkSize:", chunkSize)
 	// fmt.Println("88:", fileName)
 
-	filePath := filepath.Join(savePath, fileName)
-	fi := base.CheckFileExistBackInfo(filePath, true)
-	if fi != nil && fi.Size() == size {
-		return fileName, nil
+
+	var oldFile *os.File
+	if needDownSize == 0{
+		oldFile, err = os.OpenFile(filePath, os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0666)
+	}else {
+		oldFile, err = os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0666)
 	}
-	f, err := os.OpenFile(filePath, os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return "", err
 	}
-	// handleError(err)
-	defer f.Close()
-	// fmt.Println("99")
+	defer oldFile.Close()
 
 	var start, end int64
 	filep := make(map[string]*os.File)
@@ -137,7 +149,7 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRang
 		// return "", fmt.Errorf("maxWorkerReachedErr:%v", workerCount)
 	default:
 	}
-	if err = mergeFileAndClean(f, filep, fileNames); err != nil {
+	if err = mergeFileAndClean(oldFile, filep, fileNames); err != nil {
 		return "", err
 	}
 
@@ -214,7 +226,10 @@ func (w *Worker) writeRange(partNum int64, start int64, end int64) {
 	for {
 		select {
 		case <-w.ctx.Done():
-			fmt.Println("--->end")
+			// 取消需要返回进度 回调函数为空则直接返回
+			if w.Callback != nil {
+				go w.Callback(w.ID, w.TotalSize, w.TrunkFileSize, partNum)
+			}
 			return
 		default:
 			nr, er := body.Read(buf)
