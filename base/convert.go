@@ -79,6 +79,11 @@ func StructToJSONTagMap(item interface{}) (res map[string]interface{}) {
 			field := reflectValue.Field(i).Interface()
 			if v.Field(i).Type.Kind() == reflect.Struct {
 				res[tag] = StructToJSONTagMap(field)
+			} else if v.Field(i).Type.Kind() == reflect.Slice {
+				sliceResult, err := StructSliceToJSONTagMap(field)
+				if err == nil {
+					res[tag] = sliceResult
+				}
 			} else {
 				res[tag] = field
 			}
