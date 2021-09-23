@@ -1,7 +1,9 @@
 package net
 
 import (
+	"context"
 	"fmt"
+	"github.com/spf13/cast"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -12,13 +14,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/spf13/cast"
 	"github.com/xurwxj/gtils/base"
 	"github.com/xurwxj/viper"
 )
-
 // ChunkDownloadEx able to resume downloading.
-func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRangeSupport bool, callback func(id string, size, chunkSize, partNum int64)) (string, error) {
+func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRangeSupport bool,ctx context.Context, callback func(id string, size, chunkSize, partNum int64)) (string, error) {
 	// startTime := time.Now().UTC()
 	if savePath != "." && savePath != "./" {
 		if stat, err := os.Stat(savePath); os.IsNotExist(err) {
@@ -53,8 +53,21 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRang
 	if workerCount < 1 {
 		workerCount = 10
 	}
-	partialSize := int64(size / workerCount)
-	wc := int64(size / chunkSize)
+
+	filePath := filepath.Join(savePath, fileName)
+	fi := base.CheckFileExistBackInfo(filePath, true)
+	if fi != nil && fi.Size() == size {
+		return fileName, nil
+	}
+	var needDownSize int64
+	if fi == nil{
+		needDownSize = size
+	}else {
+		needDownSize=size - fi.Size()
+	}
+
+	partialSize := needDownSize / workerCount
+	wc := needDownSize / chunkSize
 	if wc < workerCount {
 		workerCount = wc
 		if workerCount == 0 {
@@ -67,18 +80,17 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRang
 	// fmt.Println("88 chunkSize:", chunkSize)
 	// fmt.Println("88:", fileName)
 
-	filePath := filepath.Join(savePath, fileName)
-	fi := base.CheckFileExistBackInfo(filePath, true)
-	if fi != nil && fi.Size() == size {
-		return fileName, nil
+
+	var oldFile *os.File
+	if needDownSize == 0{
+		oldFile, err = os.OpenFile(filePath, os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0666)
+	}else {
+		oldFile, err = os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0666)
 	}
-	f, err := os.OpenFile(filePath, os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return "", err
 	}
-	// handleError(err)
-	defer f.Close()
-	// fmt.Println("99")
+	defer oldFile.Close()
 
 	var start, end int64
 	filep := make(map[string]*os.File)
@@ -112,7 +124,6 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRang
 		}
 
 		start = num*partialSize + realSize
-
 		var worker = Worker{
 			URL:           turl,
 			ID:            id,
@@ -124,6 +135,7 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRang
 			Parted:        true,
 			Callback:      callback,
 			ReachedMaxErr: reachedMaxErr,
+			ctx: ctx,
 		}
 		workerWG.Add(1)
 		go worker.writeRange(num, start, end-1)
@@ -133,11 +145,11 @@ func ChunkDownloadEx(savePath, fileName, turl, id string, size int64, enableRang
 	select {
 	case <-reachedMaxErr:
 		os.RemoveAll(savePath)
-		return ChunkDownloadEx(savePath, fileName, turl, id, size, enableRangeSupport, callback)
+		return ChunkDownloadEx(savePath, fileName, turl, id, size, enableRangeSupport, ctx,callback)
 		// return "", fmt.Errorf("maxWorkerReachedErr:%v", workerCount)
 	default:
 	}
-	if err = mergeFileAndClean(f, filep, fileNames); err != nil {
+	if err = mergeFileAndClean(oldFile, filep, fileNames); err != nil {
 		return "", err
 	}
 
@@ -176,6 +188,7 @@ type Worker struct {
 	ErrCount      int64
 	Callback      func(id string, size, chunkSize, partNum int64)
 	ReachedMaxErr chan struct{}
+	ctx context.Context // 上下文可控制
 }
 
 // writeRange calls getRangeBody to get file trunk data and then write them into w.File.
@@ -211,57 +224,68 @@ func (w *Worker) writeRange(partNum int64, start int64, end int64) {
 	// make a buffer to keep chunks that are read
 	buf := make([]byte, 4*1024)
 	for {
-		nr, er := body.Read(buf)
-		if nr > 0 {
-			nw, err := w.File.WriteAt(buf[0:nr], w.Offset)
-			if err != nil {
-				w.SyncWG.Add(1)
-				w.ErrCount++
-				go w.writeRange(partNum, start, end)
-				break
+		select {
+		case <-w.ctx.Done():
+			// 取消需要返回进度 回调函数为空则直接返回
+			if w.Callback != nil {
+				go w.Callback(w.ID, w.TotalSize, w.TrunkFileSize, partNum)
 			}
-			if nr != nw {
-				w.SyncWG.Add(1)
-				w.ErrCount++
-				go w.writeRange(partNum, start, end)
-				break
-			}
+			return
+		default:
+			nr, er := body.Read(buf)
+			if nr > 0 {
+				nw, err := w.File.WriteAt(buf[0:nr], w.Offset)
+				if err != nil {
+					w.SyncWG.Add(1)
+					w.ErrCount++
+					go w.writeRange(partNum, start, end)
+					return
+				}
+				if nr != nw {
+					w.SyncWG.Add(1)
+					w.ErrCount++
+					go w.writeRange(partNum, start, end)
+					return
+				}
 
-			start = int64(nw) + start
-			w.Offset += int64(nw)
-			if nw > 0 {
-				written += int64(nw)
+				start = int64(nw) + start
+				w.Offset += int64(nw)
+				if nw > 0 {
+					written += int64(nw)
+				}
+				p := int64(float32(written) / float32(size) * 100)
+				if p%20 == 0 {
+					// fmt.Println(fmt.Sprintf("Part %d  %d%% write success.", partNum, p), time.Now().UTC())
+				}
 			}
-			p := int64(float32(written) / float32(size) * 100)
-			if p%20 == 0 {
-				// fmt.Println(fmt.Sprintf("Part %d  %d%% write success.", partNum, p), time.Now().UTC())
-			}
-		}
-		// fmt.Println("size: --- ", size)
-		// fmt.Println("written: --- ", written)
-		if er != nil {
-			if er.Error() == "EOF" {
-				if size == written {
-					// w.SyncWG.Done()
-					// return
-					// DONE 需要返回下载进度
-					if w.Callback != nil {
-						go w.Callback(w.ID, w.TotalSize, w.TrunkFileSize, partNum)
+			// fmt.Println("size: --- ", size)
+			// fmt.Println("written: --- ", written)
+			if er != nil {
+				if er.Error() == "EOF" {
+					if size == written {
+						// w.SyncWG.Done()
+						// return
+						// DONE 需要返回下载进度
+						if w.Callback != nil {
+							go w.Callback(w.ID, w.TotalSize, w.TrunkFileSize, partNum)
+						}
+					} else {
+						w.SyncWG.Add(1)
+						w.ErrCount++
+						go w.writeRange(partNum, start, end)
+						return
 					}
+					return
 				} else {
 					w.SyncWG.Add(1)
 					w.ErrCount++
 					go w.writeRange(partNum, start, end)
-					break
+					return
 				}
-				break
-			} else {
-				w.SyncWG.Add(1)
-				w.ErrCount++
-				go w.writeRange(partNum, start, end)
-				break
 			}
+
 		}
+
 	}
 }
 
