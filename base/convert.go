@@ -156,6 +156,25 @@ func StructToFormMap(obj interface{}) map[string]interface{} {
 	return data
 }
 
+// StructToDBMap decodes an object into a map of sqlx,
+// which key is the string stored under the "db" key in the struct field's tag
+// and value from the struct field.
+func StructToDBMap(obj interface{}) map[string]interface{} {
+	obj1 := reflect.TypeOf(obj)
+	obj2 := reflect.ValueOf(obj)
+
+	var data = make(map[string]interface{})
+	for i := 0; i < obj1.NumField(); i++ {
+		if obj1.Field(i).Type.Kind() == reflect.String {
+			data[obj1.Field(i).Tag.Get("db")] = obj2.Field(i).Interface()
+		}
+		if obj1.Field(i).Type.Kind() == reflect.Int || obj1.Field(i).Type.Kind() == reflect.Int64 {
+			data[obj1.Field(i).Tag.Get("db")] = fmt.Sprintf("%d", obj2.Field(i).Interface())
+		}
+	}
+	return data
+}
+
 // String2Bytes convert string to []byte
 func String2Bytes(s string) []byte {
 	stringHeader := (*reflect.StringHeader)(unsafe.Pointer(&s))
