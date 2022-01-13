@@ -1,16 +1,37 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/xurwxj/gtils/base"
 	"github.com/xurwxj/gtils/net"
 	"github.com/xurwxj/gtils/validators"
+	"github.com/xurwxj/viper"
 )
 
 func main() {
-	dgt()
+	testSendMail()
+}
+
+func testSendMail() {
+	viper.MergeConfig(bytes.NewReader([]byte(`{
+		"email": {
+			"cloud": "aliyun",
+			"zoneID": "cn-hangzhou",
+			"domain":"dm.aliyuncs.com",
+			"version":"2015-11-23",
+			"apiName":"CheckInvalidAddress",
+			"accessKey": "kjjkjjkkj",
+			"accessSecret": "87788787",
+			"account": "service@mq.xxx.com",
+			"pwd": "ghgghgh",
+			"host": "smtpdm.aliyun.com:80"
+		  }
+	}`)))
+	err := net.SendMail("victor@xurw.com", "", "dgg", "sfsdf", "html", "sss")
+	fmt.Println(err)
 }
 
 func dgt() {
