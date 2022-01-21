@@ -8,19 +8,28 @@ import (
 	"github.com/xurwxj/viper"
 )
 
+var privateIPs = []string{
+	"127.0.0.0/8", // IPv4 loopback
+	"100.64.0.0/10",
+	"198.18.0.0/15",
+	"255.255.255.255/32",
+	"192.0.0.0/24",    //RFC5736
+	"198.51.100.0/24", //RFC5737
+	"192.0.2.0/24",    //RFC5737
+	"203.0.113.0/24",  //RFC5737
+	"10.0.0.0/8",      // RFC1918
+	"172.16.0.0/12",   // RFC1918
+	"192.168.0.0/16",  // RFC1918
+	"169.254.0.0/16",  // RFC3927 link-local
+	"::1/128",         // IPv6 loopback
+	"fe80::/10",       // IPv6 link-local
+	"fc00::/7",        // IPv6 unique local addr
+}
+
 // CheckIPPublic check ip is not a private ip or multicast ip
 func CheckIPPublic(ip string) (bool, error) {
 	var privateIPBlocks []*net.IPNet
-	for _, cidr := range []string{
-		"127.0.0.0/8",    // IPv4 loopback
-		"10.0.0.0/8",     // RFC1918
-		"172.16.0.0/12",  // RFC1918
-		"192.168.0.0/16", // RFC1918
-		"169.254.0.0/16", // RFC3927 link-local
-		"::1/128",        // IPv6 loopback
-		"fe80::/10",      // IPv6 link-local
-		"fc00::/7",       // IPv6 unique local addr
-	} {
+	for _, cidr := range privateIPs {
 		_, block, err := net.ParseCIDR(cidr)
 		if err == nil {
 			privateIPBlocks = append(privateIPBlocks, block)
@@ -42,12 +51,7 @@ func CheckIPPublic(ip string) (bool, error) {
 
 func checkIPIn(ip net.IP) bool {
 	var privateIPBlocks []*net.IPNet
-	for _, cidr := range []string{
-		"127.0.0.0/8",    // IPv4 loopback
-		"169.254.0.0/16", // RFC3927 link-local
-		"::1/128",        // IPv6 loopback
-		"fe80::/10",      // IPv6 link-local
-	} {
+	for _, cidr := range privateIPs {
 		_, block, err := net.ParseCIDR(cidr)
 		if err == nil {
 			privateIPBlocks = append(privateIPBlocks, block)
