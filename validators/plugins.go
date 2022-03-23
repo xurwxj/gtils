@@ -1,9 +1,10 @@
 package validators
 
 import (
-	"encoding/json"
 	"reflect"
 	"strings"
+
+	json "github.com/json-iterator/go"
 
 	"github.com/fatih/structs"
 	validator "github.com/go-playground/validator/v10"

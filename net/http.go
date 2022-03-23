@@ -3,7 +3,6 @@ package net
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,6 +12,8 @@ import (
 	stdUrl "net/url"
 	"strings"
 	"time"
+
+	json "github.com/json-iterator/go"
 
 	validator "github.com/go-playground/validator/v10"
 	"github.com/xurwxj/gtils/validators"

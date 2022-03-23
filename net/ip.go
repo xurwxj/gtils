@@ -1,9 +1,10 @@
 package net
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
+
+	json "github.com/json-iterator/go"
 
 	"github.com/xurwxj/viper"
 )

@@ -1,12 +1,13 @@
 package base
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"reflect"
 	"strings"
 	"unsafe"
+
+	json "github.com/json-iterator/go"
 
 	"github.com/spf13/cast"
 )

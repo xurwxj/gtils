@@ -1,10 +1,11 @@
 package net
 
 import (
-	"encoding/json"
 	"fmt"
 	"runtime"
 	"time"
+
+	json "github.com/json-iterator/go"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/rs/zerolog"

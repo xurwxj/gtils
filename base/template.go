@@ -2,10 +2,11 @@ package base
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"text/template"
+
+	json "github.com/json-iterator/go"
 )
 
 // RenderText parses t as a template body, then applies it to data and returns the result.
