@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unsafe"
 
+	"github.com/go-sql-driver/mysql"
 	json "github.com/json-iterator/go"
 
 	"github.com/spf13/cast"
@@ -166,11 +167,28 @@ func StructToDBMap(obj interface{}) map[string]interface{} {
 
 	var data = make(map[string]interface{})
 	for i := 0; i < obj1.NumField(); i++ {
-		if obj1.Field(i).Type.Kind() == reflect.String {
+		kind := obj1.Field(i).Type.Kind()
+		if kind == reflect.String {
 			data[obj1.Field(i).Tag.Get("db")] = obj2.Field(i).Interface()
+			continue
 		}
-		if obj1.Field(i).Type.Kind() == reflect.Int || obj1.Field(i).Type.Kind() == reflect.Int64 {
+		if kind == reflect.Int || kind == reflect.Int64 {
 			data[obj1.Field(i).Tag.Get("db")] = fmt.Sprintf("%d", obj2.Field(i).Interface())
+			continue
+		}
+		if kind == reflect.Struct {
+			name := obj1.Field(i).Type.Name()
+			if name == "Time" {
+				tmp := cast.ToTime(obj2.Field(i).Interface())
+				data[obj1.Field(i).Tag.Get("db")] = tmp.Format("2006-01-02 15:04:05.999999")
+				continue
+			}
+			if name == "NullTime" {
+				tmp := obj2.Field(i).Interface().(mysql.NullTime)
+				if tmp.Valid {
+					data[obj1.Field(i).Tag.Get("db")] = tmp.Time.Format("2006-01-02 15:04:05.999999")
+				}
+			}
 		}
 	}
 	return data
